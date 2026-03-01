@@ -64,6 +64,7 @@ export default function KanbanColumn({
   activeDragStatus,
   isShaking,
   isAdmin,
+  hasTodoTasks,
 }) {
   const cfg = COLUMN_CONFIG[status];
 
@@ -225,7 +226,7 @@ export default function KanbanColumn({
         )}
       </div>
 
-      {/* Add task — To-Do is admin-only; other columns are open to all members */}
+      {/* Add task — To-Do is admin-only; other columns disabled when no To-Do tasks exist */}
       {status === 'todo' && !isAdmin ? (
         <div
           title="Only admins can add tasks to To-Do"
@@ -251,6 +252,33 @@ export default function KanbanColumn({
           </svg>
           <span style={{ fontSize: '0.73rem', color: 'rgba(255,255,255,0.18)', fontWeight: 500 }}>
             Admin only
+          </span>
+        </div>
+      ) : status !== 'todo' && !hasTodoTasks ? (
+        /* Disabled — no To-Do tasks to transition */
+        <div
+          title="Create tasks in To-Do first."
+          style={{
+            marginTop: '0.5rem',
+            width: '100%',
+            padding: '0.55rem',
+            borderRadius: 10,
+            background: 'transparent',
+            border: '1px dashed rgba(255,255,255,0.05)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.4rem',
+            cursor: 'not-allowed',
+            opacity: 0.5,
+            userSelect: 'none',
+          }}
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span style={{ fontSize: '0.73rem', color: 'rgba(255,255,255,0.25)', fontWeight: 500 }}>
+            Add task
           </span>
         </div>
       ) : (

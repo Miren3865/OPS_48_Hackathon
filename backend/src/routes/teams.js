@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Team = require('../models/Team');
 const User = require('../models/User');
+const Task = require('../models/Task');
 const ActivityLog = require('../models/ActivityLog');
 const { protect } = require('../middleware/auth');
 
@@ -194,6 +195,74 @@ router.put('/:teamId/members/:userId/role', async (req, res) => {
     const populated = await team.populate('members.user', 'name email');
     res.json(populated);
   } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route  DELETE /api/teams/:teamId
+// @desc   Delete a single team and all its tasks/logs (admin only)
+// @access Private (admin)
+router.delete('/:teamId', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.teamId);
+    if (!team) return res.status(404).json({ message: 'Team not found' });
+
+    const requester = team.members.find(
+      (m) => m.user.toString() === req.user._id.toString()
+    );
+    if (!requester || requester.role !== 'admin') {
+      return res.status(403).json({ message: 'Only team admins can delete a team' });
+    }
+
+    // Remove team ref from all member users
+    const memberIds = team.members.map((m) => m.user);
+    await User.updateMany(
+      { _id: { $in: memberIds } },
+      { $pull: { teams: team._id } }
+    );
+
+    // Delete tasks and activity logs belonging to this team
+    await Task.deleteMany({ team: team._id });
+    await ActivityLog.deleteMany({ team: team._id });
+
+    await team.deleteOne();
+
+    res.json({ message: `Team "${team.name}" deleted successfully`, teamId: req.params.teamId });
+  } catch (error) {
+    console.error('Delete team error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route  DELETE /api/teams
+// @desc   Delete ALL teams where the current user is admin
+// @access Private
+router.delete('/', async (req, res) => {
+  try {
+    const adminTeams = await Team.find({
+      members: { $elemMatch: { user: req.user._id, role: 'admin' } },
+    });
+
+    if (adminTeams.length === 0) {
+      return res.json({ message: 'No teams to delete', deleted: 0 });
+    }
+
+    const teamIds = adminTeams.map((t) => t._id);
+
+    // Remove team refs from ALL members of those teams
+    const allMemberIds = adminTeams.flatMap((t) => t.members.map((m) => m.user));
+    await User.updateMany(
+      { _id: { $in: allMemberIds } },
+      { $pull: { teams: { $in: teamIds } } }
+    );
+
+    await Task.deleteMany({ team: { $in: teamIds } });
+    await ActivityLog.deleteMany({ team: { $in: teamIds } });
+    await Team.deleteMany({ _id: { $in: teamIds } });
+
+    res.json({ message: `${adminTeams.length} team(s) deleted successfully`, deleted: adminTeams.length });
+  } catch (error) {
+    console.error('Delete all teams error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

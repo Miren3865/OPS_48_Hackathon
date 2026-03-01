@@ -48,6 +48,8 @@ export const teamsAPI = {
   getActivity: (teamId) => api.get(`/teams/${teamId}/activity`),
   updateMemberRole: (teamId, userId, role) =>
     api.put(`/teams/${teamId}/members/${userId}/role`, { role }),
+  deleteTeam: (teamId) => api.delete(`/teams/${teamId}`),
+  deleteAllTeams: () => api.delete('/teams'),
 };
 
 // ─── Chat API ────────────────────────────────────────────────────────────────

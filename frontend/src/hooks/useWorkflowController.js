@@ -1,11 +1,12 @@
 import { useState, useCallback, useRef } from 'react';
 import { useTeam } from '../context/TeamContext';
+import { useAuth } from '../context/AuthContext';
 
 // ─── Transition Rules (mirrors backend) ──────────────────────────────────────
 export const ALLOWED_TRANSITIONS = {
   todo:       ['inprogress', 'blocked'],
   inprogress: ['completed',  'blocked'],
-  completed:  ['blocked'],
+  completed:  [],
   blocked:    [],
 };
 
@@ -29,6 +30,7 @@ const LABELS = { todo: 'To-Do', inprogress: 'In Progress', completed: 'Completed
  */
 export function useWorkflowController() {
   const { updateTask } = useTeam();
+  const { user } = useAuth();
 
   // Currently dragged task
   const [activeTask, setActiveTask] = useState(null);
@@ -75,6 +77,15 @@ export function useWorkflowController() {
     const toStatus = over.id; // droppable id === column status key
 
     if (!task || task.status === toStatus) return;
+
+    // ── Ownership guard ───────────────────────────────────────────────────────
+    const assignedId = task.assignedTo?._id ?? task.assignedTo;
+    const currentUserId = user?._id;
+    if (!assignedId || assignedId.toString() !== currentUserId?.toString()) {
+      triggerShake(toStatus);
+      showToast('Only the assigned member can move this task.', 'error');
+      return;
+    }
 
     if (!canTransition(task.status, toStatus)) {
       triggerShake(toStatus);

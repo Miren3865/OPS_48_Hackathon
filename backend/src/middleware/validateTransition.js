@@ -5,13 +5,13 @@
  *
  * todo       → inprogress, blocked
  * inprogress → completed,  blocked
- * completed  → blocked
+ * completed  → (none — terminal)
  * blocked    → (none — terminal)
  */
 const ALLOWED = {
   todo:       ['inprogress', 'blocked'],
   inprogress: ['completed',  'blocked'],
-  completed:  ['blocked'],
+  completed:  [],
   blocked:    [],
 };
 

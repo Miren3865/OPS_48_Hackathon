@@ -2,10 +2,12 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Task = require('../models/Task');
 const Team = require('../models/Team');
+const User = require('../models/User');
 const ActivityLog = require('../models/ActivityLog');
 const { protect } = require('../middleware/auth');
 const { calculateRiskRadar } = require('../utils/riskRadar');
 const { canTransition } = require('../middleware/validateTransition');
+const { sendTaskAssignmentEmail } = require('../utils/mailer');
 
 const router = express.Router();
 
@@ -64,16 +66,24 @@ router.post(
         return res.status(403).json({ message: 'Not a team member' });
       }
 
-      const { title, description, assignedTo, deadline, priority, status } =
-        req.body;
+      const { title, description, assignedTo, deadline, priority } = req.body;
 
+      // Validate assignedTo belongs to this team
+      if (assignedTo) {
+        const memberExists = await isTeamMember(req.params.teamId, assignedTo);
+        if (!memberExists) {
+          return res.status(400).json({ message: 'Assigned user is not a member of this team' });
+        }
+      }
+
+      // Always force new tasks to To-Do — client cannot set initial status
       const task = await Task.create({
         title,
         description: description || '',
         assignedTo: assignedTo || null,
         deadline: deadline || null,
         priority: priority || 'medium',
-        status: status || 'todo',
+        status: 'todo',
         team: req.params.teamId,
         createdBy: req.user._id,
       });
@@ -92,6 +102,24 @@ router.post(
         { path: 'assignedTo', select: 'name email' },
         { path: 'createdBy', select: 'name' },
       ]);
+
+      // Send assignment email (skip if assigning to self)
+      if (assignedTo && assignedTo.toString() !== req.user._id.toString()) {
+        try {
+          const assignee = await User.findById(assignedTo).select('name email');
+          if (assignee?.email) {
+            await sendTaskAssignmentEmail(
+              assignee.email,
+              assignee.name,
+              task.title,
+              task.deadline,
+              req.params.teamId
+            );
+          }
+        } catch (mailErr) {
+          console.error('Assignment email failed (non-fatal):', mailErr.message);
+        }
+      }
 
       // Emit socket event (accessed via req.app)
       const io = req.app.get('io');
@@ -128,6 +156,7 @@ router.put('/:teamId/:taskId', async (req, res) => {
     if (!task) return res.status(404).json({ message: 'Task not found' });
 
     const oldStatus = task.status;
+    const oldAssignedTo = task.assignedTo?.toString() || null;
     const {
       title,
       description,
@@ -137,6 +166,27 @@ router.put('/:teamId/:taskId', async (req, res) => {
       status,
       blockerReason,
     } = req.body;
+
+    // Validate assignedTo belongs to team (when being changed)
+    if (assignedTo !== undefined && assignedTo !== null && assignedTo !== '') {
+      const memberExists = await isTeamMember(req.params.teamId, assignedTo);
+      if (!memberExists) {
+        return res.status(400).json({ message: 'Assigned user is not a member of this team' });
+      }
+    }
+
+    // ── Ownership guard on status transition ─────────────────────────────
+    if (status !== undefined && status !== oldStatus) {
+      if (!task.assignedTo || task.assignedTo.toString() !== req.user._id.toString()) {
+        const role = await getMemberRole(req.params.teamId, req.user._id);
+        if (role !== 'admin') {
+          return res.status(403).json({
+            message: 'Only the assigned member can change this task\'s status.',
+            code: 'NOT_ASSIGNED',
+          });
+        }
+      }
+    }
 
     // Update fields if provided
     if (title !== undefined) task.title = title;
@@ -192,6 +242,11 @@ router.put('/:teamId/:taskId', async (req, res) => {
       if (status === 'blocked') {
         action += ` (${task.blockerReason})`;
       }
+    } else if (assignedTo !== undefined && assignedTo !== null && assignedTo.toString() !== oldAssignedTo) {
+      try {
+        const newAssignee = await User.findById(assignedTo).select('name');
+        action = `assigned "${task.title}" to ${newAssignee?.name || 'a member'}`;
+      } catch (_) { /* non-fatal */ }
     }
 
     await ActivityLog.create({
@@ -208,6 +263,29 @@ router.put('/:teamId/:taskId', async (req, res) => {
       { path: 'createdBy', select: 'name' },
       { path: 'blockedBy', select: 'name' },
     ]);
+
+    // Send assignment email when reassigning (skip if assigning to self)
+    if (
+      assignedTo !== undefined &&
+      assignedTo !== null &&
+      assignedTo.toString() !== oldAssignedTo &&
+      assignedTo.toString() !== req.user._id.toString()
+    ) {
+      try {
+        const assignee = await User.findById(assignedTo).select('name email');
+        if (assignee?.email) {
+          await sendTaskAssignmentEmail(
+            assignee.email,
+            assignee.name,
+            task.title,
+            task.deadline,
+            req.params.teamId
+          );
+        }
+      } catch (mailErr) {
+        console.error('Assignment email failed (non-fatal):', mailErr.message);
+      }
+    }
 
     // Emit real-time update to team room
     const io = req.app.get('io');

@@ -334,7 +334,7 @@ export default function LandingPage() {
           <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
           <span>WebSocket-live</span>
           <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
-          <span>Zero latency</span>
+          <span>Low latency</span>
         </div>
 
         {/* ── FEATURES GRID ── */}

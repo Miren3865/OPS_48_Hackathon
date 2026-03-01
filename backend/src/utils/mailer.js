@@ -263,4 +263,73 @@ const sendOverdueTaskEmail = async (toEmail, toName, taskTitle, deadline, teamNa
   });
 };
 
-module.exports = { sendVerificationEmail, sendMentionEmail, sendDeadlineWarningEmail, sendOverdueTaskEmail };
+// ─── Task Assignment Email ─────────────────────────────────────────────────────
+/**
+ * Notifies a user that a task has been assigned to them.
+ * @param {string} toEmail   – recipient address
+ * @param {string} toName    – recipient display name
+ * @param {string} taskTitle – task title
+ * @param {Date|string} deadline – task deadline
+ * @param {string} teamId    – MongoDB team id (for deep-link)
+ */
+const sendTaskAssignmentEmail = async (toEmail, toName, taskTitle, deadline, teamId) => {
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const teamUrl = `${frontendUrl}/team/${teamId}`;
+  const transporter = createTransporter();
+
+  const deadlineStr = deadline
+    ? new Date(deadline).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+    : 'No deadline set';
+
+  await transporter.sendMail({
+    from: `"OpsBoard" <${process.env.EMAIL_USER}>`,
+    to: toEmail,
+    subject: 'You have been assigned a new task in OpsBoard',
+    text: `Hi ${toName},\n\nYou have been assigned the task:\n"${taskTitle}"\n\nDeadline: ${deadlineStr}\n\nVisit: ${teamUrl}\n\nOpsBoard`,
+    html: `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/></head>
+<body style="margin:0;padding:0;background:#030712;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+        <table width="100%" style="max-width:480px;" cellpadding="0" cellspacing="0">
+          <tr>
+            <td align="center" style="padding-bottom:28px;">
+              <div style="display:inline-block;width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#6366f1,#8b5cf6);text-align:center;line-height:48px;font-size:20px;font-weight:800;color:#fff;">O</div>
+              <p style="margin:10px 0 0;font-size:18px;font-weight:700;color:rgba(255,255,255,0.9);">OpsBoard</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:20px;padding:32px;">
+              <p style="margin:0 0 6px;font-size:20px;font-weight:700;color:rgba(255,255,255,0.92);">New task assigned 📋</p>
+              <p style="margin:0 0 20px;font-size:14px;color:rgba(255,255,255,0.45);line-height:1.6;">Hi <strong style="color:rgba(255,255,255,0.7);">${toName}</strong>, a new task has been assigned to you.</p>
+              <div style="background:rgba(99,102,241,0.1);border-left:3px solid #6366f1;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:24px;">
+                <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:rgba(255,255,255,0.85);">${taskTitle}</p>
+                <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.4);">Deadline: ${deadlineStr}</p>
+              </div>
+              <table cellpadding="0" cellspacing="0" role="presentation" width="100%">
+                <tr>
+                  <td align="center">
+                    <a href="${teamUrl}" style="display:inline-block;padding:13px 32px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:10px;color:#fff;font-size:14px;font-weight:600;text-decoration:none;">View Task Board</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-top:20px;">
+              <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.2);">You received this because a task was assigned to you in OpsBoard.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+  });
+};
+
+module.exports = { sendVerificationEmail, sendMentionEmail, sendDeadlineWarningEmail, sendOverdueTaskEmail, sendTaskAssignmentEmail };

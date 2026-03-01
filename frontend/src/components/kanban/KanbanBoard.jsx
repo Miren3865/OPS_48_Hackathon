@@ -96,22 +96,37 @@ export default function KanbanBoard() {
   );
 
   // ── Add Task button control logic ──────────────────────────────
+  // Source status per destination column (mirrors workflow transitions):
+  //   In Progress  ← To-Do tasks assigned to me
+  //   Completed    ← In-Progress tasks assigned to me
+  //   Blocked      ← To-Do + In-Progress tasks assigned to me
+  const myTasksByStatus = (statuses) =>
+    tasks.filter(
+      (t) =>
+        statuses.includes(t.status) &&
+        (t.assignedTo?._id ?? t.assignedTo)?.toString() === user?._id?.toString()
+    );
+
+  const sourceStatusMap = {
+    inprogress: ['todo'],
+    completed:  ['inprogress'],
+    blocked:    ['todo', 'inprogress'],
+  };
+
+  // hasTodoTasks drives the disabled state of non-todo Add buttons
+  const hasTodoTasks = myTasksByStatus(['todo']).length > 0;
+
   const handleAddTask = (columnStatus) => {
     if (columnStatus === 'todo') {
-      // Normal create
       setEditingTask(null);
       setDefaultStatus('todo');
       setModalOpen(true);
       return;
     }
 
-    // Determine eligible source tasks based on destination column
-    const sourceStatuses =
-      columnStatus === 'inprogress' ? ['todo'] :
-      columnStatus === 'completed'  ? ['inprogress'] :
-      /* blocked */                   ['todo', 'inprogress', 'completed'];
+    const sourceTasks = myTasksByStatus(sourceStatusMap[columnStatus] ?? []);
+    if (sourceTasks.length === 0) return;
 
-    const sourceTasks = tasks.filter((t) => sourceStatuses.includes(t.status));
     setSelectModal({ targetStatus: columnStatus, sourceTasks });
   };
 
@@ -214,6 +229,11 @@ export default function KanbanBoard() {
               activeDragStatus={activeTask?.status ?? null}
               isShaking={shakeCol === status}
               isAdmin={isAdmin}
+              hasTodoTasks={
+                status === 'todo'
+                  ? true
+                  : myTasksByStatus(sourceStatusMap[status] ?? []).length > 0
+              }
             />
           ))}
         </div>

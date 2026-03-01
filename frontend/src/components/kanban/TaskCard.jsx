@@ -22,9 +22,14 @@ const PRIORITY_META = {
 export default function TaskCard({ task, columnAccent = '#94a3b8', onEdit, onDelete, onUnblock, currentUserId, isDragOverlay }) {
   const isBlocked  = task.status === 'blocked';
   const isComplete = task.status === 'completed';
+  const isInProgress = task.status === 'inprogress';
   const isOverdue  = task.deadline && isPast(new Date(task.deadline)) && task.status !== 'completed';
   const isDueToday = task.deadline && isToday(new Date(task.deadline));
   const canDelete  = task.createdBy?._id === currentUserId;
+
+  // Ownership: only the assigned member (or unassigned tasks) are draggable
+  const assignedId = task.assignedTo?._id ?? task.assignedTo;
+  const isOwner = !assignedId || assignedId.toString() === currentUserId?.toString();
 
   // Urgent = non-completed, has deadline, due within next 12 hours (but not yet overdue)
   const TWELVE_H_MS = 12 * 60 * 60 * 1000;
@@ -34,17 +39,17 @@ export default function TaskCard({ task, columnAccent = '#94a3b8', onEdit, onDel
     task.deadline &&
     new Date(task.deadline).getTime() - Date.now() <= TWELVE_H_MS;
 
-  // Blocked tasks are terminal — disable dragging
+  // Blocked and Completed tasks are terminal — disable dragging entirely
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task._id,
-    disabled: isBlocked || isDragOverlay,
+    disabled: isBlocked || isComplete || isDragOverlay || !isOwner,
     data: { task },
   });
 
   const style = {
     transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.4 : 1,
-    cursor: isBlocked ? 'default' : isDragging ? 'grabbing' : 'grab',
+    opacity: isDragging ? 0.4 : !isOwner ? 0.55 : 1,
+    cursor: isBlocked || isComplete || isInProgress ? 'default' : !isOwner ? 'not-allowed' : isDragging ? 'grabbing' : 'grab',
     transition: isDragging ? 'none' : 'opacity 0.15s ease',
   };
 
@@ -57,8 +62,35 @@ export default function TaskCard({ task, columnAccent = '#94a3b8', onEdit, onDel
       {...listeners}
       className={`task-card${isBlocked ? ' task-blocked-pulse' : ''}${isComplete ? ' task-completed-glow' : ''}${isUrgent ? ' task-urgent-glow' : ''}${isOverdue ? ' task-overdue-glow' : ''}`}
       style={{ '--task-accent': columnAccent, ...style }}
-      onClick={() => !isDragging && onEdit(task)}
+      onClick={() => !isDragging && !isComplete && !isInProgress && onEdit(task)}
     >
+      {/* Non-owner lock badge */}
+      {!isOwner && !isBlocked && (
+        <div
+          title="Only the assigned member can move this task"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+            marginBottom: '0.45rem',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 6,
+            padding: '0.15rem 0.5rem',
+            fontSize: '0.65rem',
+            color: 'rgba(255,255,255,0.3)',
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+            userSelect: 'none',
+          }}
+        >
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          Locked
+        </div>
+      )}
       {/* Blocked banner */}
       {isBlocked && (
         <div

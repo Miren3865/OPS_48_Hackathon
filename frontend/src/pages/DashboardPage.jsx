@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/common/Navbar';
 import { CreateTeamModal, JoinTeamModal } from '../components/team/TeamModals';
+import ConfirmModal from '../components/common/ConfirmModal';
+import { teamsAPI } from '../services/api';
 
 const TEAM_GRADIENTS = [
   'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
@@ -22,6 +24,38 @@ export default function DashboardPage() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
+
+  // ── Delete state ──────────────────────────────────────────────
+  const [deleteTarget, setDeleteTarget] = useState(null);   // { _id, name } | null
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteOne = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await teamsAPI.deleteTeam(deleteTarget._id);
+      await refreshUser();
+    } catch (err) {
+      console.error('Delete team failed:', err);
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    setDeleting(true);
+    try {
+      await teamsAPI.deleteAllTeams();
+      await refreshUser();
+    } catch (err) {
+      console.error('Delete all teams failed:', err);
+    } finally {
+      setDeleting(false);
+      setDeleteAllOpen(false);
+    }
+  };
 
   const handleTeamCreated = async (team) => {
     await refreshUser();
@@ -79,7 +113,19 @@ export default function DashboardPage() {
             </div>
 
             {/* Actions */}
-            <div style={{ display: 'flex', gap: '0.625rem' }}>
+            <div style={{ display: 'flex', gap: '0.625rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              {teams.length > 0 && (
+                <button
+                  onClick={() => setDeleteAllOpen(true)}
+                  className="btn-secondary"
+                  style={{ gap: '0.4rem', color: '#f87171', borderColor: 'rgba(248,113,113,0.3)' }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                  </svg>
+                  Delete all
+                </button>
+              )}
               <button
                 onClick={() => setShowJoin(true)}
                 className="btn-secondary"
@@ -202,6 +248,37 @@ export default function DashboardPage() {
                   pointerEvents: 'none',
                 }} />
 
+                {/* Delete button */}
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteTarget({ _id: team._id || team, name: team.name || 'Team' });
+                  }}
+                  title="Delete team"
+                  style={{
+                    position: 'absolute', top: '0.75rem', right: '0.75rem',
+                    width: 28, height: 28, borderRadius: 8,
+                    background: 'rgba(248,113,113,0)',
+                    border: '1px solid rgba(248,113,113,0)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', transition: 'all 0.15s ease',
+                    zIndex: 2,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(248,113,113,0.12)';
+                    e.currentTarget.style.borderColor = 'rgba(248,113,113,0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(248,113,113,0)';
+                    e.currentTarget.style.borderColor = 'rgba(248,113,113,0)';
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                  </svg>
+                </button>
+
                 {/* Avatar */}
                 <div
                   style={{
@@ -322,6 +399,32 @@ export default function DashboardPage() {
         isOpen={showJoin}
         onClose={() => setShowJoin(false)}
         onJoined={handleTeamJoined}
+      />
+
+      {/* ── Delete single team confirmation ── */}
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="Delete team?"
+        message={`"${deleteTarget?.name}" and all its tasks will be permanently deleted. This cannot be undone.`}
+        confirmText="Yes, delete team"
+        cancelText="Cancel"
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleDeleteOne}
+        onCancel={() => !deleting && setDeleteTarget(null)}
+      />
+
+      {/* ── Delete all teams confirmation ── */}
+      <ConfirmModal
+        isOpen={deleteAllOpen}
+        title="Delete all teams?"
+        message={`All ${teams.length} team(s) you admin, along with their tasks and activity, will be permanently deleted. This cannot be undone.`}
+        confirmText="Yes, delete all"
+        cancelText="Cancel"
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleDeleteAll}
+        onCancel={() => !deleting && setDeleteAllOpen(false)}
       />
     </div>
   );
