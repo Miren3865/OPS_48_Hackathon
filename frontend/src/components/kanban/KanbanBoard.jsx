@@ -18,6 +18,7 @@ import ConfirmModal from '../common/ConfirmModal';
 import { useTeam } from '../../context/TeamContext';
 import { useAuth } from '../../context/AuthContext';
 import { useWorkflowController } from '../../hooks/useWorkflowController';
+import DeadlineBanner from '../dashboard/DeadlineBanner';
 
 const COLUMNS = ['todo', 'inprogress', 'completed', 'blocked'];
 
@@ -180,7 +181,8 @@ export default function KanbanBoard() {
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative' }}>
-
+      {/* ── Deadline alert banner ─────────────────────────── */}
+      <DeadlineBanner />
       {/* ── DnD Board ────────────────────────────────────────── */}
       <DndContext
         sensors={sensors}

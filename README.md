@@ -237,4 +237,3 @@ Visit: **http://localhost:5173**
 ---
 
 *Built with ❤️ for the Interdictor Track Hackathon*
-"# OPS_48_Hackathon" 

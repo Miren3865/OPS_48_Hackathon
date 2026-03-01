@@ -171,4 +171,96 @@ const sendMentionEmail = async (toEmail, toName, senderName, teamName, teamId, m
   await transporter.sendMail(mailOptions);
 };
 
-module.exports = { sendVerificationEmail, sendMentionEmail };
+// ─── Deadline Warning Email ─────────────────────────────────────────────────────
+/**
+ * Task-nearing-deadline email notification.
+ * @param {string} toEmail    – recipient address
+ * @param {string} toName     – recipient display name
+ * @param {string} taskTitle  – task title
+ * @param {Date}   deadline   – deadline Date object
+ * @param {string} teamName   – team name
+ * @param {string} teamUrl    – frontend deep-link to the team board
+ */
+const sendDeadlineWarningEmail = async (toEmail, toName, taskTitle, deadline, teamName, teamUrl) => {
+  const transporter = createTransporter();
+  const deadlineStr = new Date(deadline).toLocaleString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+
+  await transporter.sendMail({
+    from: `"OpsBoard" <${process.env.EMAIL_USER}>`,
+    to: toEmail,
+    subject: `⏰ Task nearing deadline — "${taskTitle}"`,
+    text: `Hi ${toName},\n\nThe task "${taskTitle}" in team "${teamName}" is due soon.\nDeadline: ${deadlineStr}\n\nView board: ${teamUrl}\n\nOpsBoard`,
+    html: `
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#030712;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px;">
+  <table width="100%" style="max-width:480px;" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding-bottom:24px;">
+      <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#f59e0b,#ef4444);display:inline-flex;align-items:center;justify-content:center;font-size:20px;">&#x23f0;</div>
+      <p style="margin:8px 0 0;font-size:18px;font-weight:700;color:rgba(255,255,255,0.9);">OpsBoard</p>
+    </td></tr>
+    <tr><td style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:20px;padding:28px 28px;">
+      <p style="margin:0 0 6px;font-size:20px;font-weight:700;color:rgba(255,255,255,0.92);">Deadline approaching &#x23f0;</p>
+      <p style="margin:0 0 16px;font-size:14px;color:rgba(255,255,255,0.5);line-height:1.6;">Hi ${toName}, a task you are responsible for is due soon in <strong style="color:rgba(255,255,255,0.7);">${teamName}</strong>.</p>
+      <div style="background:rgba(245,158,11,0.1);border-left:3px solid #f59e0b;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:20px;">
+        <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#fbbf24;">${taskTitle}</p>
+        <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.4);">Due: ${deadlineStr}</p>
+      </div>
+      <table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center">
+        <a href="${teamUrl}" style="display:inline-block;padding:12px 30px;background:linear-gradient(135deg,#f59e0b,#ef4444);border-radius:10px;color:#fff;font-size:14px;font-weight:600;text-decoration:none;">View Task Board</a>
+      </td></tr></table>
+    </td></tr>
+    <tr><td align="center" style="padding-top:18px;"><p style="margin:0;font-size:11px;color:rgba(255,255,255,0.2);">OpsBoard automated deadline reminder.</p></td></tr>
+  </table>
+</td></tr></table>
+</body></html>`,
+  });
+};
+
+// ─── Overdue Task Email ───────────────────────────────────────────────────────
+/**
+ * Strong alert email for tasks that have already passed their deadline.
+ */
+const sendOverdueTaskEmail = async (toEmail, toName, taskTitle, deadline, teamName, teamUrl) => {
+  const transporter = createTransporter();
+  const deadlineStr = new Date(deadline).toLocaleString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+
+  await transporter.sendMail({
+    from: `"OpsBoard" <${process.env.EMAIL_USER}>`,
+    to: toEmail,
+    subject: `🚨 OVERDUE: Task "${taskTitle}" requires immediate action`,
+    text: `Hi ${toName},\n\nURGENT: The task "${taskTitle}" in team "${teamName}" is OVERDUE.\nDeadline was: ${deadlineStr}\n\nPlease action this immediately.\nView board: ${teamUrl}\n\nOpsBoard`,
+    html: `
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#030712;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px;">
+  <table width="100%" style="max-width:480px;" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding-bottom:24px;">
+      <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#dc2626,#7f1d1d);display:inline-flex;align-items:center;justify-content:center;font-size:20px;">&#x1f6a8;</div>
+      <p style="margin:8px 0 0;font-size:18px;font-weight:700;color:rgba(255,255,255,0.9);">OpsBoard</p>
+    </td></tr>
+    <tr><td style="background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.3);border-radius:20px;padding:28px 28px;">
+      <p style="margin:0 0 6px;font-size:20px;font-weight:700;color:#fca5a5;">Task overdue &#x1f6a8;</p>
+      <p style="margin:0 0 16px;font-size:14px;color:rgba(255,255,255,0.5);line-height:1.6;">Hi ${toName}, a task in <strong style="color:rgba(255,255,255,0.7);">${teamName}</strong> has passed its deadline and needs immediate attention.</p>
+      <div style="background:rgba(220,38,38,0.15);border-left:3px solid #ef4444;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:20px;">
+        <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#f87171;">${taskTitle}</p>
+        <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.4);">Was due: ${deadlineStr}</p>
+      </div>
+      <table cellpadding="0" cellspacing="0" width="100%"><tr><td align="center">
+        <a href="${teamUrl}" style="display:inline-block;padding:12px 30px;background:linear-gradient(135deg,#dc2626,#9f1239);border-radius:10px;color:#fff;font-size:14px;font-weight:600;text-decoration:none;">Take Action Now</a>
+      </td></tr></table>
+    </td></tr>
+    <tr><td align="center" style="padding-top:18px;"><p style="margin:0;font-size:11px;color:rgba(255,255,255,0.2);">OpsBoard automated overdue alert.</p></td></tr>
+  </table>
+</td></tr></table>
+</body></html>`,
+  });
+};
+
+module.exports = { sendVerificationEmail, sendMentionEmail, sendDeadlineWarningEmail, sendOverdueTaskEmail };

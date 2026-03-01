@@ -5,6 +5,7 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const initSocket = require('./socket/socketHandler');
+const { startEscalationScheduler } = require('./utils/escalationService');
 
 // Route imports
 const authRoutes = require('./routes/auth');
@@ -34,6 +35,9 @@ app.set('io', io);
 
 // Initialize Socket.IO event handlers
 initSocket(io);
+
+// Start deadline escalation cron (runs every 10 min)
+startEscalationScheduler(io);
 
 // Middleware
 app.use(

@@ -11,6 +11,8 @@ export const TeamProvider = ({ children }) => {
   const [riskReport, setRiskReport] = useState(null);
   const [loadingTeam, setLoadingTeam] = useState(false);
   const [loadingTasks, setLoadingTasks] = useState(false);
+  // Real-time deadline alerts pushed by the escalation scheduler
+  const [deadlineAlerts, setDeadlineAlerts] = useState([]);
 
   // Load team data and tasks
   const loadTeam = useCallback(async (teamId) => {
@@ -67,10 +69,22 @@ export const TeamProvider = ({ children }) => {
       setRiskReport(report);
     };
 
+    const onDeadlineAlert = (alert) => {
+      // Append and auto-expire after 30 s so the banner can re-dismiss itself
+      setDeadlineAlerts((prev) => [
+        ...prev.filter((a) => a.taskId !== alert.taskId),
+        { ...alert, receivedAt: Date.now() },
+      ]);
+      setTimeout(() => {
+        setDeadlineAlerts((prev) => prev.filter((a) => a.taskId !== alert.taskId));
+      }, 30_000);
+    };
+
     socket.on('task:created', onTaskCreated);
     socket.on('task:updated', onTaskUpdated);
     socket.on('task:deleted', onTaskDeleted);
     socket.on('risk:updated', onRiskUpdated);
+    socket.on('deadlineAlert', onDeadlineAlert);
 
     return () => {
       leaveTeamRoom(currentTeam._id);
@@ -78,6 +92,7 @@ export const TeamProvider = ({ children }) => {
       socket.off('task:updated', onTaskUpdated);
       socket.off('task:deleted', onTaskDeleted);
       socket.off('risk:updated', onRiskUpdated);
+      socket.off('deadlineAlert', onDeadlineAlert);
     };
   }, [currentTeam]);
 
@@ -141,6 +156,7 @@ export const TeamProvider = ({ children }) => {
         stats,
         riskReport,
         setRiskReport,
+        deadlineAlerts,
       }}
     >
       {children}

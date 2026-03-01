@@ -59,6 +59,13 @@ const TaskSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Set to true once the escalation email/alert has been sent.
+    // Prevents duplicate notifications for the same task.
+    escalationSent: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
   },
   { timestamps: true }
 );

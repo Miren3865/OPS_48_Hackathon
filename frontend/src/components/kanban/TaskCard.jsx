@@ -1,6 +1,17 @@
-import { formatDistanceToNow, isPast, isToday } from 'date-fns';
+import { formatDistanceToNow, isPast, isToday, differenceInHours, differenceInMinutes } from 'date-fns';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
+
+/** Format a deadline that is within 12h as a short countdown string */
+function fmtCountdown(deadline) {
+  const now = new Date();
+  const totalMins = differenceInMinutes(new Date(deadline), now);
+  if (totalMins <= 0) return 'Overdue';
+  const h = Math.floor(totalMins / 60);
+  const m = totalMins % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
 
 const PRIORITY_META = {
   low:    { color: '#94a3b8', label: 'Low',    bg: 'rgba(148,163,184,0.12)' },
@@ -14,6 +25,14 @@ export default function TaskCard({ task, columnAccent = '#94a3b8', onEdit, onDel
   const isOverdue  = task.deadline && isPast(new Date(task.deadline)) && task.status !== 'completed';
   const isDueToday = task.deadline && isToday(new Date(task.deadline));
   const canDelete  = task.createdBy?._id === currentUserId;
+
+  // Urgent = non-completed, has deadline, due within next 12 hours (but not yet overdue)
+  const TWELVE_H_MS = 12 * 60 * 60 * 1000;
+  const isUrgent =
+    !isComplete &&
+    !isOverdue &&
+    task.deadline &&
+    new Date(task.deadline).getTime() - Date.now() <= TWELVE_H_MS;
 
   // Blocked tasks are terminal — disable dragging
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -36,7 +55,7 @@ export default function TaskCard({ task, columnAccent = '#94a3b8', onEdit, onDel
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      className={`task-card${isBlocked ? ' task-blocked-pulse' : ''}${isComplete ? ' task-completed-glow' : ''}`}
+      className={`task-card${isBlocked ? ' task-blocked-pulse' : ''}${isComplete ? ' task-completed-glow' : ''}${isUrgent ? ' task-urgent-glow' : ''}${isOverdue ? ' task-overdue-glow' : ''}`}
       style={{ '--task-accent': columnAccent, ...style }}
       onClick={() => !isDragging && onEdit(task)}
     >
@@ -216,9 +235,17 @@ export default function TaskCard({ task, columnAccent = '#94a3b8', onEdit, onDel
                 : isDueToday
                 ? 'rgba(251,191,36,0.12)'
                 : 'rgba(255,255,255,0.06)',
-              color: isOverdue ? '#f87171' : isDueToday ? '#fbbf24' : 'rgba(255,255,255,0.35)',
+              color: isOverdue
+                ? '#f87171'
+                : isUrgent
+                ? '#fb923c'
+                : isDueToday
+                ? '#fbbf24'
+                : 'rgba(255,255,255,0.35)',
               border: isOverdue
-                ? '1px solid rgba(248,113,113,0.2)'
+                ? '1px solid rgba(248,113,113,0.25)'
+                : isUrgent
+                ? '1px solid rgba(251,146,60,0.35)'
                 : isDueToday
                 ? '1px solid rgba(251,191,36,0.2)'
                 : '1px solid transparent',
@@ -227,6 +254,8 @@ export default function TaskCard({ task, columnAccent = '#94a3b8', onEdit, onDel
           >
             {isOverdue
               ? 'Overdue'
+              : isUrgent
+              ? `⏱ ${fmtCountdown(task.deadline)}`
               : isDueToday
               ? 'Today'
               : formatDistanceToNow(new Date(task.deadline), { addSuffix: true })}
