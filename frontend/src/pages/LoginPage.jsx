@@ -56,7 +56,7 @@ export default function LoginPage() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '1.5rem',
-        background: 'radial-gradient(ellipse 80% 80% at 50% 0%, rgba(59,130,246,0.12) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 90% 90%, rgba(139,92,246,0.08) 0%, transparent 50%), #030712',
+        background: 'radial-gradient(ellipse 80% 80% at 50% 0%, rgba(59,130,246,0.12) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 90% 90%, rgba(139,92,246,0.08) 0%, transparent 50%), var(--bg-primary)',
         position: 'relative',
         overflow: 'hidden',
       }}

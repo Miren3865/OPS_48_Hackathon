@@ -1,10 +1,13 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { teamsAPI, tasksAPI, riskAPI } from '../services/api';
 import { getSocket, joinTeamRoom, leaveTeamRoom } from '../services/socket';
+import { useAuth } from './AuthContext';
+import { useNotifications } from '../hooks/useNotifications';
 
 const TeamContext = createContext(null);
 
 export const TeamProvider = ({ children }) => {
+  const { user } = useAuth();
   const [currentTeam, setCurrentTeam] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
@@ -13,6 +16,18 @@ export const TeamProvider = ({ children }) => {
   const [loadingTasks, setLoadingTasks] = useState(false);
   // Real-time deadline alerts pushed by the escalation scheduler
   const [deadlineAlerts, setDeadlineAlerts] = useState([]);
+
+  // Derived permission flags for the current authenticated user
+  const currentMemberEntry = useMemo(() => {
+    if (!currentTeam || !user) return null;
+    return currentTeam.members.find(
+      (m) => (m.user?._id ?? m.user?.toString()) === (user._id ?? user.id)
+    ) ?? null;
+  }, [currentTeam, user]);
+
+  const currentUserRole = currentMemberEntry?.role ?? null; // 'admin' | 'member' | null
+  const currentUserCanCreateTask =
+    currentMemberEntry?.role === 'admin' || currentMemberEntry?.canCreateTask === true;
 
   // Load team data and tasks
   const loadTeam = useCallback(async (teamId) => {
@@ -80,11 +95,16 @@ export const TeamProvider = ({ children }) => {
       }, 30_000);
     };
 
+    const onTeamPermissionUpdated = (updatedTeam) => {
+      setCurrentTeam(updatedTeam);
+    };
+
     socket.on('task:created', onTaskCreated);
     socket.on('task:updated', onTaskUpdated);
     socket.on('task:deleted', onTaskDeleted);
     socket.on('risk:updated', onRiskUpdated);
     socket.on('deadlineAlert', onDeadlineAlert);
+    socket.on('team:permissionUpdated', onTeamPermissionUpdated);
 
     return () => {
       leaveTeamRoom(currentTeam._id);
@@ -93,6 +113,7 @@ export const TeamProvider = ({ children }) => {
       socket.off('task:deleted', onTaskDeleted);
       socket.off('risk:updated', onRiskUpdated);
       socket.off('deadlineAlert', onDeadlineAlert);
+      socket.off('team:permissionUpdated', onTeamPermissionUpdated);
     };
   }, [currentTeam]);
 
@@ -118,6 +139,17 @@ export const TeamProvider = ({ children }) => {
     return task;
   };
 
+  // Update a member's task-creation permission (admin only)
+  const updateMemberPermission = async (memberId, canCreateTask) => {
+    const { data: updatedTeam } = await teamsAPI.updateMemberPermission(
+      currentTeam._id,
+      memberId,
+      canCreateTask
+    );
+    setCurrentTeam(updatedTeam);
+    return updatedTeam;
+  };
+
   const refreshActivity = async () => {
     if (!currentTeam) return;
     const { data } = await teamsAPI.getActivity(currentTeam._id);
@@ -137,6 +169,9 @@ export const TeamProvider = ({ children }) => {
         : 0,
   };
 
+  // Browser push notifications for real-time team events
+  useNotifications(currentTeam, user?._id);
+
   return (
     <TeamContext.Provider
       value={{
@@ -153,10 +188,13 @@ export const TeamProvider = ({ children }) => {
         deleteTask,
         unblockTask,
         refreshActivity,
+        updateMemberPermission,
         stats,
         riskReport,
         setRiskReport,
         deadlineAlerts,
+        currentUserRole,
+        currentUserCanCreateTask,
       }}
     >
       {children}

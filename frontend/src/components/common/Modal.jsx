@@ -37,25 +37,25 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '1.25rem 1.5rem',
-            borderBottom: '1px solid rgba(255,255,255,0.07)',
+          borderBottom: '1px solid var(--border-color)',
           }}
         >
-          <h2 style={{ fontSize: '0.975rem', fontWeight: 700, color: 'rgba(255,255,255,0.88)', letterSpacing: '-0.02em' }}>
+          <h2 style={{ fontSize: '0.975rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
             {title}
           </h2>
           <button
             onClick={onClose}
             style={{
               width: 28, height: 28, borderRadius: 8,
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: 'rgba(255,255,255,0.5)',
+              background: 'var(--card-bg)',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-secondary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', fontSize: '0.95rem', lineHeight: 1,
               transition: 'all 0.15s ease',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; e.currentTarget.style.color = '#fff'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-elevated)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--card-bg)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
           >
             ✕
           </button>

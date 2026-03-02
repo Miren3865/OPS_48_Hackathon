@@ -77,7 +77,7 @@ export default function DashboardPage() {
     <div
       style={{
         minHeight: '100vh',
-        background: 'radial-gradient(ellipse 70% 50% at 30% 0%, rgba(59,130,246,0.07) 0%, transparent 60%), radial-gradient(ellipse 50% 40% at 80% 60%, rgba(139,92,246,0.06) 0%, transparent 50%), #030712',
+        background: 'radial-gradient(ellipse 70% 50% at 30% 0%, rgba(59,130,246,0.07) 0%, transparent 60%), radial-gradient(ellipse 50% 40% at 80% 60%, rgba(139,92,246,0.06) 0%, transparent 50%), var(--bg-primary)',
       }}
     >
       <Navbar />
@@ -88,7 +88,7 @@ export default function DashboardPage() {
         <div className="animate-fade-up" style={{ marginBottom: '3rem' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem' }}>
             <div>
-              <p style={{ fontSize: '0.78rem', fontWeight: 600, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+              <p style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
                 {greeting}
               </p>
               <h1
@@ -105,7 +105,7 @@ export default function DashboardPage() {
               >
                 {firstName}.
               </h1>
-              <p style={{ marginTop: '0.5rem', color: 'rgba(255,255,255,0.38)', fontSize: '0.9rem', fontWeight: 400 }}>
+              <p style={{ marginTop: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 400 }}>
                 {teams.length === 0
                   ? 'Create your first team and start commanding.'
                   : `You're managing ${teams.length} team${teams.length !== 1 ? 's' : ''}.`}
@@ -161,9 +161,9 @@ export default function DashboardPage() {
               marginTop: '3rem',
               textAlign: 'center',
               padding: '5rem 2rem',
-              background: 'rgba(255,255,255,0.018)',
-              border: '1px dashed rgba(255,255,255,0.1)',
-              borderRadius: 20,
+              background: 'var(--card-bg)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 20,
             }}
           >
             {/* Floating icon */}
@@ -186,10 +186,10 @@ export default function DashboardPage() {
               </svg>
             </div>
 
-            <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'rgba(255,255,255,0.75)', marginBottom: '0.6rem', letterSpacing: '-0.02em' }}>
+            <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.6rem', letterSpacing: '-0.02em' }}>
               No teams yet
             </h2>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.875rem', maxWidth: 340, margin: '0 auto 2rem', lineHeight: 1.65 }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', maxWidth: 340, margin: '0 auto 2rem', lineHeight: 1.65 }}>
               Create your first team to get a real-time command center for everyone working with you.
             </p>
 
@@ -217,8 +217,8 @@ export default function DashboardPage() {
                 onClick={() => navigate(`/team/${team._id || team}`)}
                 className="animate-fade-up"
                 style={{
-                  background: 'rgba(255,255,255,0.028)',
-                  border: '1px solid rgba(255,255,255,0.07)',
+                  background: 'var(--card-bg)',
+                  border: '1px solid var(--border-color)',
                   borderRadius: 18,
                   padding: '1.5rem',
                   textAlign: 'left',
@@ -229,14 +229,14 @@ export default function DashboardPage() {
                   overflow: 'hidden',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.048)';
-                  e.currentTarget.style.borderColor = 'rgba(99,179,250,0.25)';
+                  e.currentTarget.style.background = 'var(--bg-elevated)';
+                  e.currentTarget.style.borderColor = 'var(--border-hover)';
                   e.currentTarget.style.transform = 'translateY(-3px)';
                   e.currentTarget.style.boxShadow = '0 0 0 1px rgba(59,130,246,0.1), 0 16px 48px rgba(0,0,0,0.4), 0 4px 16px rgba(59,130,246,0.07)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.028)';
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)';
+                  e.currentTarget.style.background = 'var(--card-bg)';
+                  e.currentTarget.style.borderColor = 'var(--border-color)';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = 'none';
                 }}
@@ -304,7 +304,7 @@ export default function DashboardPage() {
                   style={{
                     fontWeight: 700,
                     fontSize: '1rem',
-                    color: 'rgba(255,255,255,0.88)',
+                    color: 'var(--text-primary)',
                     marginBottom: '0.3rem',
                     letterSpacing: '-0.02em',
                   }}
@@ -313,7 +313,7 @@ export default function DashboardPage() {
                 </h3>
 
                 {team.description && (
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.38)', marginBottom: '0.875rem', lineHeight: 1.5 }}>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.875rem', lineHeight: 1.5 }}>
                     {team.description}
                   </p>
                 )}
@@ -323,13 +323,13 @@ export default function DashboardPage() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.3rem',
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.08)',
+                    background: 'var(--card-bg)',
+                    border: '1px solid var(--border-color)',
                     borderRadius: 6,
                     padding: '0.2rem 0.55rem',
                     fontSize: '0.7rem',
                     fontFamily: 'monospace',
-                    color: 'rgba(255,255,255,0.4)',
+                    color: 'var(--text-secondary)',
                     letterSpacing: '0.08em',
                     marginBottom: '0.75rem',
                   }}>
@@ -354,8 +354,8 @@ export default function DashboardPage() {
             <button
               onClick={() => setShowCreate(true)}
               style={{
-                background: 'rgba(255,255,255,0.015)',
-                border: '1px dashed rgba(255,255,255,0.09)',
+                background: 'var(--bg-surface, rgba(255,255,255,0.015))',
+                border: '1px dashed var(--border-color)',
                 borderRadius: 18,
                 padding: '1.5rem',
                 textAlign: 'center',
@@ -370,11 +370,11 @@ export default function DashboardPage() {
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'rgba(59,130,246,0.05)';
-                e.currentTarget.style.borderColor = 'rgba(59,130,246,0.25)';
+                e.currentTarget.style.borderColor = 'var(--accent)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.015)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)';
+                e.currentTarget.style.background = 'var(--bg-surface, rgba(255,255,255,0.015))';
+                e.currentTarget.style.borderColor = 'var(--border-color)';
               }}
             >
               <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -382,7 +382,7 @@ export default function DashboardPage() {
                   <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
               </div>
-              <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>
+              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
                 New team
               </span>
             </button>

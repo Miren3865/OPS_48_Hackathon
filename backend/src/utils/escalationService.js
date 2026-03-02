@@ -122,9 +122,11 @@ const runEscalationCheck = async (io) => {
             // ── 3. Emit real-time alert to the team room ─────────────────────
             io.to(teamId).emit('deadlineAlert', {
               taskId: task._id,
+              taskTitle: task.title,
               title: task.title,
               deadline: task.deadline,
               isOverdue,
+              assignedToId: task.assignedTo?._id || null,
               assignedTo: task.assignedTo
                 ? { name: task.assignedTo.name }
                 : null,

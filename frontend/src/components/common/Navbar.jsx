@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import ThemeSwitcher from './ThemeSwitcher';
 
 export default function Navbar({ teamName }) {
   const { user, logout } = useAuth();
@@ -22,10 +23,10 @@ export default function Navbar({ teamName }) {
         justifyContent: 'space-between',
         padding: '0 1.5rem',
         height: 56,
-        background: 'rgba(3,7,18,0.82)',
+        background: 'var(--bg-secondary)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(255,255,255,0.055)',
+        borderBottom: '1px solid var(--border-color)',
         position: 'sticky',
         top: 0,
         zIndex: 100,
@@ -41,7 +42,7 @@ export default function Navbar({ teamName }) {
             width: 30,
             height: 30,
             borderRadius: 8,
-            background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+            background: 'linear-gradient(135deg, var(--accent-blue, #3b82f6) 0%, var(--accent-violet, #6366f1) 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -59,7 +60,7 @@ export default function Navbar({ teamName }) {
             fontSize: '0.95rem',
             fontWeight: 700,
             letterSpacing: '-0.03em',
-            color: 'rgba(255,255,255,0.85)',
+            color: 'var(--text-primary)',
           }}
         >
           OpsBoard
@@ -67,14 +68,14 @@ export default function Navbar({ teamName }) {
 
         {teamName && (
           <>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted, rgba(255,255,255,0.2))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
               <polyline points="9 18 15 12 9 6"/>
             </svg>
             <span
               style={{
                 fontSize: '0.875rem',
                 fontWeight: 500,
-                color: 'rgba(255,255,255,0.5)',
+                color: 'var(--text-secondary)',
                 maxWidth: 180,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -87,8 +88,8 @@ export default function Navbar({ teamName }) {
         )}
       </div>
 
-      {/* Right: live indicator + user */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      {/* Right: live indicator + theme switcher + user */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
         {/* Live */}
         <div
           style={{
@@ -107,6 +108,9 @@ export default function Navbar({ teamName }) {
           </span>
         </div>
 
+        {/* Theme Switcher */}
+        {/* <ThemeSwitcher /> */}
+
         {/* User avatar + name */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <div
@@ -121,7 +125,7 @@ export default function Navbar({ teamName }) {
               fontSize: '0.7rem',
               fontWeight: 800,
               color: '#fff',
-              border: '1.5px solid rgba(255,255,255,0.15)',
+              border: '1.5px solid var(--border-color)',
               flexShrink: 0,
             }}
           >
@@ -131,7 +135,7 @@ export default function Navbar({ teamName }) {
             style={{
               fontSize: '0.82rem',
               fontWeight: 500,
-              color: 'rgba(255,255,255,0.6)',
+              color: 'var(--text-secondary)',
               display: window.innerWidth > 640 ? 'block' : 'none',
               maxWidth: 120,
               overflow: 'hidden',
@@ -149,16 +153,15 @@ export default function Navbar({ teamName }) {
           style={{
             fontSize: '0.78rem',
             fontWeight: 500,
-            color: 'rgba(255,255,255,0.3)',
+            color: 'var(--text-secondary)',
             background: 'none',
             border: 'none',
             cursor: 'pointer',
             padding: '0.3rem 0.5rem',
             borderRadius: 6,
-            transition: 'color 0.15s ease',
           }}
-          onMouseEnter={(e) => (e.target.style.color = 'rgba(255,255,255,0.75)')}
-          onMouseLeave={(e) => (e.target.style.color = 'rgba(255,255,255,0.3)')}
+          onMouseEnter={(e) => (e.target.style.color = 'var(--text-primary)')}
+          onMouseLeave={(e) => (e.target.style.color = 'var(--text-secondary)')}
         >
           Sign out
         </button>
@@ -166,4 +169,3 @@ export default function Navbar({ teamName }) {
     </nav>
   );
 }
-

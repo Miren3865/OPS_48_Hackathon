@@ -66,6 +66,11 @@ const TaskSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
+    // Timestamp when the task was moved to 'completed' — used for burndown/velocity charts
+    completedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

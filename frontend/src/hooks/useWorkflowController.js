@@ -28,7 +28,7 @@ const LABELS = { todo: 'To-Do', inprogress: 'In Progress', completed: 'Completed
  *   Toast             — toast
  *   Shake             — shakeCol
  */
-export function useWorkflowController() {
+export function useWorkflowController({ isAdmin = false } = {}) {
   const { updateTask } = useTeam();
   const { user } = useAuth();
 
@@ -78,10 +78,10 @@ export function useWorkflowController() {
 
     if (!task || task.status === toStatus) return;
 
-    // ── Ownership guard ───────────────────────────────────────────────────────
+    // ── Ownership guard (admins can move any task) ───────────────────────────
     const assignedId = task.assignedTo?._id ?? task.assignedTo;
     const currentUserId = user?._id;
-    if (!assignedId || assignedId.toString() !== currentUserId?.toString()) {
+    if (!isAdmin && (!assignedId || assignedId.toString() !== currentUserId?.toString())) {
       triggerShake(toStatus);
       showToast('Only the assigned member can move this task.', 'error');
       return;

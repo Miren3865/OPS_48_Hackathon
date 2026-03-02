@@ -151,7 +151,7 @@ export default function LandingPage() {
     <div
       style={{
         minHeight: '100vh',
-        background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(59,130,246,0.14) 0%, transparent 70%), radial-gradient(ellipse 60% 40% at 80% 80%, rgba(139,92,246,0.10) 0%, transparent 60%), #030712',
+        background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(59,130,246,0.14) 0%, transparent 70%), radial-gradient(ellipse 60% 40% at 80% 80%, rgba(139,92,246,0.10) 0%, transparent 60%), var(--bg-primary)',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
@@ -169,9 +169,9 @@ export default function LandingPage() {
           padding: '1.25rem 2.5rem',
           position: 'relative',
           zIndex: 10,
-          borderBottom: '1px solid rgba(255,255,255,0.045)',
+          borderBottom: '1px solid var(--border-color)',
           backdropFilter: 'blur(16px)',
-          background: 'rgba(3,7,18,0.6)',
+          background: 'var(--bg-secondary)',
         }}
       >
         {/* Logo */}

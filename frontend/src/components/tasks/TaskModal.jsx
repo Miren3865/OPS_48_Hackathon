@@ -26,6 +26,7 @@ export default function TaskModal({
   task = null,
   members = [],
   defaultStatus = 'todo',
+  isAdmin = false,
 }) {
   const isEdit = !!task;
 
@@ -40,6 +41,13 @@ export default function TaskModal({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Earliest allowed deadline: tomorrow (not today, not the past)
+  const minDeadline = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  })();
 
   // Populate form on edit
   useEffect(() => {
@@ -88,6 +96,10 @@ export default function TaskModal({
     }
     if (!form.deadline) {
       setError('Please set a deadline');
+      return;
+    }
+    if (form.deadline < minDeadline) {
+      setError('Deadline must be after today');
       return;
     }
     if (form.status === 'blocked' && !form.blockerReason.trim()) {
@@ -143,10 +155,17 @@ export default function TaskModal({
         {/* Status & Priority */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Status <span style={{ color: '#f87171' }}>*</span></label>
-            <select name="status" value={form.status} onChange={handleChange} className="input-field">
-              {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
+            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Status</label>
+            {isEdit ? (
+              <select name="status" value={form.status} onChange={handleChange} className="input-field">
+                {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            ) : (
+              <div className="input-field" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'default', userSelect: 'none', opacity: 0.7 }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#94a3b8', flexShrink: 0 }} />
+                To-Do
+              </div>
+            )}
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Priority <span style={{ color: '#f87171' }}>*</span></label>
@@ -161,14 +180,16 @@ export default function TaskModal({
           <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Assign To <span style={{ color: '#f87171' }}>*</span></label>
           <select name="assignedTo" value={form.assignedTo} onChange={handleChange} className="input-field">
             <option value="">— Select a member —</option>
-            {members.map((m) => <option key={m.user._id} value={m.user._id}>{m.user.name} ({m.role})</option>)}
+            {members
+              .filter((m) => isAdmin || m.role !== 'admin')
+              .map((m) => <option key={m.user._id} value={m.user._id}>{m.user.name}</option>)}
           </select>
         </div>
 
         {/* Deadline */}
         <div>
           <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Deadline <span style={{ color: '#f87171' }}>*</span></label>
-          <input type="date" name="deadline" value={form.deadline} onChange={handleChange} className="input-field" />
+          <input type="date" name="deadline" value={form.deadline} onChange={handleChange} className="input-field" min={minDeadline} />
         </div>
 
         {/* Blocker reason */}
@@ -196,6 +217,7 @@ export default function TaskModal({
           <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
         </div>
       </form>
+
     </Modal>
   );
 }

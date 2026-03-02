@@ -19,13 +19,13 @@ const PRIORITY_META = {
   high:   { color: '#f87171', label: 'High',   bg: 'rgba(248,113,113,0.12)' },
 };
 
-export default function TaskCard({ task, columnAccent = '#94a3b8', onEdit, onDelete, onUnblock, currentUserId, isDragOverlay }) {
+export default function TaskCard({ task, columnAccent = '#94a3b8', onEdit, onDelete, onUnblock, currentUserId, isAdmin, isDragOverlay }) {
   const isBlocked  = task.status === 'blocked';
   const isComplete = task.status === 'completed';
   const isInProgress = task.status === 'inprogress';
   const isOverdue  = task.deadline && isPast(new Date(task.deadline)) && task.status !== 'completed';
   const isDueToday = task.deadline && isToday(new Date(task.deadline));
-  const canDelete  = task.createdBy?._id === currentUserId;
+  const canDelete  = isAdmin && isComplete;
 
   // Ownership: only the assigned member (or unassigned tasks) are draggable
   const assignedId = task.assignedTo?._id ?? task.assignedTo;
@@ -65,7 +65,7 @@ export default function TaskCard({ task, columnAccent = '#94a3b8', onEdit, onDel
       onClick={() => !isDragging && !isComplete && !isInProgress && onEdit(task)}
     >
       {/* Non-owner lock badge */}
-      {!isOwner && !isBlocked && (
+      {!isOwner && !isBlocked && !isAdmin && (
         <div
           title="Only the assigned member can move this task"
           style={{
@@ -114,7 +114,8 @@ export default function TaskCard({ task, columnAccent = '#94a3b8', onEdit, onDel
           <span style={{ lineHeight: 1.4, flex: 1 }}>
             <strong>Blocked:</strong> {task.blockerReason || 'No reason given'}
           </span>
-          {onUnblock && (
+          {/* Unblock (admin only) */}
+          {onUnblock && isAdmin && (
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); onUnblock(task); }}
@@ -262,19 +263,25 @@ export default function TaskCard({ task, columnAccent = '#94a3b8', onEdit, onDel
               fontWeight: 600,
               padding: '0.18rem 0.5rem',
               borderRadius: 6,
-              background: isOverdue
+              background: isComplete
+                ? 'rgba(52,211,153,0.1)'
+                : isOverdue
                 ? 'rgba(248,113,113,0.12)'
                 : isDueToday
                 ? 'rgba(251,191,36,0.12)'
                 : 'rgba(255,255,255,0.06)',
-              color: isOverdue
+              color: isComplete
+                ? '#34d399'
+                : isOverdue
                 ? '#f87171'
                 : isUrgent
                 ? '#fb923c'
                 : isDueToday
                 ? '#fbbf24'
                 : 'rgba(255,255,255,0.35)',
-              border: isOverdue
+              border: isComplete
+                ? '1px solid rgba(52,211,153,0.2)'
+                : isOverdue
                 ? '1px solid rgba(248,113,113,0.25)'
                 : isUrgent
                 ? '1px solid rgba(251,146,60,0.35)'
@@ -284,7 +291,9 @@ export default function TaskCard({ task, columnAccent = '#94a3b8', onEdit, onDel
               whiteSpace: 'nowrap',
             }}
           >
-            {isOverdue
+            {isComplete
+              ? '✓ Done'
+              : isOverdue
               ? 'Overdue'
               : isUrgent
               ? `⏱ ${fmtCountdown(task.deadline)}`
@@ -295,7 +304,7 @@ export default function TaskCard({ task, columnAccent = '#94a3b8', onEdit, onDel
         )}
       </div>
 
-      {/* Delete (creator only) */}
+      {/* Delete (admin only, completed tasks) */}
       {canDelete && (
         <button
           onPointerDown={(e) => e.stopPropagation()}

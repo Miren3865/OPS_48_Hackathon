@@ -146,7 +146,7 @@ export default function VerifyEmailPage() {
         justifyContent: 'center',
         padding: '1.5rem',
         background:
-          'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(139,92,246,0.1) 0%, transparent 60%), #030712',
+          'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(139,92,246,0.1) 0%, transparent 60%), var(--bg-primary)',
         position: 'relative',
         overflow: 'hidden',
       }}

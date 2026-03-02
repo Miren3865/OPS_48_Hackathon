@@ -5,6 +5,7 @@ const User = require('../models/User');
 const Task = require('../models/Task');
 const ActivityLog = require('../models/ActivityLog');
 const { protect } = require('../middleware/auth');
+const { sendTaskPermissionEmail, sendTaskPermissionRevokedEmail } = require('../utils/mailer');
 
 const router = express.Router();
 
@@ -195,6 +196,100 @@ router.put('/:teamId/members/:userId/role', async (req, res) => {
     const populated = await team.populate('members.user', 'name email');
     res.json(populated);
   } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route  PUT /api/teams/:teamId/permissions/:memberId
+// @desc   Grant or revoke task-creation permission for a member (admin only)
+// @access Private (admin)
+router.put('/:teamId/permissions/:memberId', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.teamId);
+    if (!team) return res.status(404).json({ message: 'Team not found' });
+
+    // Only admin can adjust permissions
+    const requester = team.members.find(
+      (m) => m.user.toString() === req.user._id.toString()
+    );
+    if (!requester || requester.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const targetMember = team.members.find(
+      (m) => m.user.toString() === req.params.memberId
+    );
+    if (!targetMember) {
+      return res.status(404).json({ message: 'Member not found in team' });
+    }
+
+    // Admins always have task-creation permission — silently ignore attempts to demote
+    if (targetMember.role === 'admin') {
+      const populated = await team.populate('members.user', 'name email');
+      return res.json(populated);
+    }
+
+    const { canCreateTask } = req.body;
+    if (typeof canCreateTask !== 'boolean') {
+      return res.status(400).json({ message: 'canCreateTask must be a boolean' });
+    }
+
+    targetMember.canCreateTask = canCreateTask;
+    await team.save();
+
+    // Resolve target user name for activity log
+    const targetUser = await User.findById(req.params.memberId).select('name');
+    const action = canCreateTask
+      ? `granted task creation permission to ${targetUser?.name ?? 'a member'}`
+      : `revoked task creation permission from ${targetUser?.name ?? 'a member'}`;
+
+    await ActivityLog.create({
+      team: team._id,
+      user: req.user._id,
+      action,
+      entityType: 'member',
+      entityId: targetMember.user,
+      entityTitle: targetUser?.name ?? '',
+    });
+
+    const populated = await team.populate('members.user', 'name email');
+
+    // Notify all team members in real-time
+    const io = req.app.get('io');
+    if (io) {
+      io.to(team._id.toString()).emit('team:permissionUpdated', populated);
+    }
+
+    // Send email to the member on grant or revoke (non-fatal)
+    try {
+      const targetUserFull = await User.findById(req.params.memberId).select('name email');
+      const adminUser = await User.findById(req.user._id).select('name');
+      if (targetUserFull?.email) {
+        if (canCreateTask) {
+          await sendTaskPermissionEmail(
+            targetUserFull.email,
+            targetUserFull.name,
+            adminUser?.name ?? 'Your admin',
+            team.name,
+            team._id.toString()
+          );
+        } else {
+          await sendTaskPermissionRevokedEmail(
+            targetUserFull.email,
+            targetUserFull.name,
+            adminUser?.name ?? 'Your admin',
+            team.name,
+            team._id.toString()
+          );
+        }
+      }
+    } catch (mailErr) {
+      console.error('Permission email failed (non-fatal):', mailErr.message);
+    }
+
+    res.json(populated);
+  } catch (error) {
+    console.error('Update permission error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

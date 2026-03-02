@@ -107,8 +107,8 @@ export default function StandupModal() {
           <div style={{
             position: 'relative', width: '100%', maxWidth: 520,
             maxHeight: '85vh', overflowY: 'auto',
-            background: 'rgba(10,12,24,0.96)',
-            border: '1px solid rgba(255,255,255,0.09)',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)',
             borderRadius: 20,
             boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.08)',
           }}>
@@ -117,11 +117,11 @@ export default function StandupModal() {
               position: 'sticky', top: 0, zIndex: 10,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '1rem 1.25rem',
-              background: 'rgba(10,12,24,0.97)',
-              borderBottom: '1px solid rgba(255,255,255,0.07)',
+              background: 'var(--bg-secondary)',
+              borderBottom: '1px solid var(--border-color)',
             }}>
               <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'white' }}>Daily Standup</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Daily Standup</div>
                 {report && (
                   <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
                     {new Date(report.generatedAt).toLocaleString()}
@@ -329,8 +329,8 @@ export default function StandupModal() {
                 position: 'sticky', bottom: 0,
                 display: 'flex', gap: '0.625rem',
                 padding: '0.875rem 1.25rem',
-                background: 'rgba(10,12,24,0.97)',
-                borderTop: '1px solid rgba(255,255,255,0.07)',
+                background: 'var(--bg-secondary)',
+                borderTop: '1px solid var(--border-color)',
               }}>
                 <button
                   onClick={copyToClipboard}

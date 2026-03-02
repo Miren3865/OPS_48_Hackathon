@@ -48,6 +48,8 @@ export const teamsAPI = {
   getActivity: (teamId) => api.get(`/teams/${teamId}/activity`),
   updateMemberRole: (teamId, userId, role) =>
     api.put(`/teams/${teamId}/members/${userId}/role`, { role }),
+  updateMemberPermission: (teamId, memberId, canCreateTask) =>
+    api.put(`/teams/${teamId}/permissions/${memberId}`, { canCreateTask }),
   deleteTeam: (teamId) => api.delete(`/teams/${teamId}`),
   deleteAllTeams: () => api.delete('/teams'),
 };
@@ -64,6 +66,9 @@ export const tasksAPI = {
   update: (teamId, taskId, data) => api.put(`/tasks/${teamId}/${taskId}`, data),
   unblock: (teamId, taskId) => api.put(`/tasks/${teamId}/${taskId}/unblock`),
   delete: (teamId, taskId) => api.delete(`/tasks/${teamId}/${taskId}`),
+  getBurndown: (teamId) => api.get(`/tasks/${teamId}/burndown`),
+  getComments: (teamId, taskId) => api.get(`/tasks/${teamId}/${taskId}/comments`),
+  addComment: (teamId, taskId, text) => api.post(`/tasks/${teamId}/${taskId}/comments`, { text }),
 };
 
 // ─── Risk Radar API ───────────────────────────────────────────────────────────

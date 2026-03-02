@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -15,10 +15,12 @@ import TaskModal from '../tasks/TaskModal';
 import BlockReasonModal from './BlockReasonModal';
 import SelectTaskModal from './SelectTaskModal';
 import ConfirmModal from '../common/ConfirmModal';
+import FilterBar from './FilterBar';
 import { useTeam } from '../../context/TeamContext';
 import { useAuth } from '../../context/AuthContext';
 import { useWorkflowController } from '../../hooks/useWorkflowController';
 import DeadlineBanner from '../dashboard/DeadlineBanner';
+import ShortcutsHelp from '../common/ShortcutsHelp';
 
 const COLUMNS = ['todo', 'inprogress', 'completed', 'blocked'];
 
@@ -29,7 +31,7 @@ const TOAST_LOOK = {
 };
 
 export default function KanbanBoard() {
-  const { tasks, currentTeam, createTask, updateTask, deleteTask, unblockTask } = useTeam();
+  const { tasks, currentTeam, createTask, updateTask, deleteTask, unblockTask, currentUserCanCreateTask } = useTeam();
   const { user } = useAuth();
 
   // Derive current user's role in this team
@@ -37,11 +39,15 @@ export default function KanbanBoard() {
     (m) => m.user?._id === user?._id && m.role === 'admin'
   ) ?? false;
 
+  // canCreateTask: admin OR granted permission
+  const canCreateTask = currentUserCanCreateTask ?? false;
+
   // ── Task edit/create modal ────────────────────────────────────────
   const [modalOpen, setModalOpen]       = useState(false);
   const [editingTask, setEditingTask]   = useState(null);
   const [defaultStatus, setDefaultStatus] = useState('todo');
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleteConfirm, setDeleteConfirm]   = useState(null); // { taskId, title }
+  const [deletingTask,  setDeletingTask]    = useState(false);
 
   // ── Select-task modal (for In-Progress / Completed / Blocked + buttons) ──
   const [selectModal, setSelectModal] = useState(null);
@@ -88,7 +94,7 @@ export default function KanbanBoard() {
     handleBlockedCancel,
     toast,
     shakeCol,
-  } = useWorkflowController();
+  } = useWorkflowController({ isAdmin });
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -177,18 +183,74 @@ export default function KanbanBoard() {
     }
   };
 
-  const handleDeleteTask = async (taskId) => {
-    if (deleteConfirm === taskId) {
-      await deleteTask(taskId);
+  const handleDeleteTask = (taskId) => {
+    const task = tasks.find((t) => t._id === taskId);
+    setDeleteConfirm({ taskId, title: task?.title || 'this task' });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm) return;
+    setDeletingTask(true);
+    try {
+      await deleteTask(deleteConfirm.taskId);
       setDeleteConfirm(null);
-    } else {
-      setDeleteConfirm(taskId);
-      setTimeout(() => setDeleteConfirm(null), 3000);
+    } catch (err) {
+      console.error('Delete failed:', err);
+    } finally {
+      setDeletingTask(false);
     }
   };
 
+  // ── Filter state ────────────────────────────────────────────
+  const [filters, setFilters] = useState({ search: '', priority: 'all', assignee: 'all' });
+  const searchRef = useRef(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKey = (e) => {
+      // Ignore when typing in inputs/textareas
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      if (e.key === '/') {
+        e.preventDefault();
+        searchRef.current?.focus();
+      } else if (e.key === '?') {
+        e.preventDefault();
+        setShowShortcuts(true);
+      } else if (e.key === 'n' || e.key === 'N') {
+        if (!modalOpen && canCreateTask) {
+          e.preventDefault();
+          setEditingTask(null);
+          setDefaultStatus('todo');
+          setModalOpen(true);
+        }
+      } else if (e.key === 'Escape') {
+        setShowShortcuts(false);
+        if (filters.search) setFilters((f) => ({ ...f, search: '' }));
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [modalOpen, canCreateTask, filters.search]);
+
+  // Apply filters to tasks
+  const filteredTasks = tasks.filter((t) => {
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      if (!t.title.toLowerCase().includes(q) && !t.description?.toLowerCase().includes(q)) return false;
+    }
+    if (filters.priority !== 'all' && t.priority !== filters.priority) return false;
+    if (filters.assignee !== 'all') {
+      const aid = (t.assignedTo?._id ?? t.assignedTo)?.toString();
+      if (aid !== filters.assignee) return false;
+    }
+    return true;
+  });
+
   const tasksByStatus = COLUMNS.reduce((acc, s) => {
-    acc[s] = tasks.filter((t) => t.status === s);
+    acc[s] = filteredTasks.filter((t) => t.status === s);
     return acc;
   }, {});
 
@@ -196,8 +258,16 @@ export default function KanbanBoard() {
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative' }}>
+      {showShortcuts && <ShortcutsHelp onClose={() => setShowShortcuts(false)} />}
       {/* ── Deadline alert banner ─────────────────────────── */}
       <DeadlineBanner />
+      {/* ── Filter bar ───────────────────────────────────────── */}
+      <FilterBar
+        filters={filters}
+        setFilters={setFilters}
+        members={members}
+        searchRef={searchRef}
+      />
       {/* ── DnD Board ────────────────────────────────────────── */}
       <DndContext
         sensors={sensors}
@@ -229,6 +299,7 @@ export default function KanbanBoard() {
               activeDragStatus={activeTask?.status ?? null}
               isShaking={shakeCol === status}
               isAdmin={isAdmin}
+              canCreateTask={canCreateTask}
               hasTodoTasks={
                 status === 'todo'
                   ? true
@@ -254,6 +325,19 @@ export default function KanbanBoard() {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      {/* ── Delete confirmation modal ────────────────────────────── */}
+      <ConfirmModal
+        isOpen={!!deleteConfirm}
+        title="Delete completed task?"
+        message={`"${deleteConfirm?.title}" will be permanently deleted and cannot be recovered.`}
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+        variant="danger"
+        loading={deletingTask}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => !deletingTask && setDeleteConfirm(null)}
+      />
 
       {/* ── Unblock confirmation modal ───────────────────────────── */}
       <ConfirmModal
@@ -301,6 +385,7 @@ export default function KanbanBoard() {
         task={editingTask}
         members={members}
         defaultStatus={defaultStatus}
+        isAdmin={isAdmin}
       />
 
       {/* ── Toast ────────────────────────────────────────────────── */}

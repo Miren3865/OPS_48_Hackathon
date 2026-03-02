@@ -33,6 +33,10 @@ const TeamSchema = new mongoose.Schema(
           enum: ['admin', 'member'],
           default: 'member',
         },
+        canCreateTask: {
+          type: Boolean,
+          default: false,
+        },
         joinedAt: {
           type: Date,
           default: Date.now,

@@ -3,9 +3,10 @@ import { useTeam } from '../../context/TeamContext';
 import { useAuth } from '../../context/AuthContext';
 
 export default function TeamMembersList() {
-  const { currentTeam } = useTeam();
+  const { currentTeam, updateMemberPermission } = useTeam();
   const { user } = useAuth();
   const [codeCopied, setCodeCopied] = useState(false);
+  const [permTogglingId, setPermTogglingId] = useState(null); // memberId being updated
 
   if (!currentTeam) return null;
 
@@ -16,6 +17,18 @@ export default function TeamMembersList() {
     navigator.clipboard.writeText(currentTeam.inviteCode);
     setCodeCopied(true);
     setTimeout(() => setCodeCopied(false), 2000);
+  };
+
+  const handlePermissionToggle = async (memberId, current) => {
+    if (permTogglingId) return; // debounce
+    setPermTogglingId(memberId);
+    try {
+      await updateMemberPermission(memberId, !current);
+    } catch (err) {
+      console.error('Permission update failed:', err);
+    } finally {
+      setPermTogglingId(null);
+    }
   };
 
   return (
@@ -66,39 +79,129 @@ export default function TeamMembersList() {
       )}
 
       {/* Members */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-        {currentTeam.members.map((m) => (
-          <div key={m.user._id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.2rem 0' }}>
-            <div style={{
-              width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-              background: m.role === 'admin'
-                ? 'linear-gradient(135deg, #3b82f6, #6366f1)'
-                : 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05))',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '0.68rem', fontWeight: 700, color: 'white',
-              boxShadow: m.role === 'admin' ? '0 0 8px rgba(59,130,246,0.3)' : 'none',
-            }}>
-              {m.user.name?.charAt(0).toUpperCase()}
-            </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.72)', fontWeight: 500 }}>
-                {m.user.name}
-              </span>
-              {m.user._id === user._id && (
-                <span style={{ fontSize: '0.63rem', color: 'rgba(255,255,255,0.25)', marginLeft: 4 }}>(you)</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+        {currentTeam.members.map((m, idx) => {
+          const isAdminMember = m.role === 'admin';
+          // effective permission: admin always can create; others use the flag
+          const effectiveCanCreate = isAdminMember || m.canCreateTask === true;
+          const isCurrentUser = m.user._id === user._id;
+          const isToggling = permTogglingId === m.user._id;
+          const isLast = idx === currentTeam.members.length - 1;
+
+          return (
+            <div
+              key={m.user._id}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.28rem',
+                padding: '0.4rem 0',
+                borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.04)',
+              }}
+            >
+              {/* ── Top row: avatar · name · role badge ── */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', minWidth: 0 }}>
+                {/* Avatar */}
+                <div style={{
+                  width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                  background: isAdminMember
+                    ? 'linear-gradient(135deg, #3b82f6, #6366f1)'
+                    : 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05))',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '0.68rem', fontWeight: 700, color: 'white',
+                  boxShadow: isAdminMember ? '0 0 8px rgba(59,130,246,0.3)' : 'none',
+                }}>
+                  {m.user.name?.charAt(0).toUpperCase()}
+                </div>
+
+                {/* Name */}
+                <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+                  <span style={{
+                    fontSize: '0.78rem', color: 'rgba(255,255,255,0.72)', fontWeight: 500,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block',
+                  }}>
+                    {m.user.name}
+                    {isCurrentUser && (
+                      <span style={{ fontSize: '0.63rem', color: 'rgba(255,255,255,0.25)', marginLeft: 4 }}>(you)</span>
+                    )}
+                  </span>
+                </div>
+
+                {/* Role badge */}
+                <span style={{
+                  fontSize: '0.6rem', fontWeight: 700, padding: '0.12rem 0.45rem',
+                  borderRadius: 6, flexShrink: 0,
+                  background: isAdminMember ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${isAdminMember ? 'rgba(59,130,246,0.25)' : 'rgba(255,255,255,0.08)'}`,
+                  color: isAdminMember ? '#60a5fa' : 'rgba(255,255,255,0.35)',
+                  textTransform: 'uppercase', letterSpacing: '0.05em',
+                }}>
+                  {isAdminMember ? 'Admin' : 'Member'}
+                </span>
+              </div>
+
+              {/* ── Second row: toggle + labels (admin view, non-admin members only) ── */}
+              {isAdmin && !isAdminMember && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  paddingLeft: '2.15rem', /* indent under avatar */
+                }}>
+                  {/* Toggle */}
+                  <button
+                    onClick={() => handlePermissionToggle(m.user._id, effectiveCanCreate)}
+                    disabled={isToggling}
+                    title={effectiveCanCreate ? 'Revoke task creation permission' : 'Grant task creation permission'}
+                    role="switch"
+                    aria-checked={effectiveCanCreate}
+                    style={{
+                      position: 'relative',
+                      width: 30, height: 17,
+                      borderRadius: 99,
+                      border: 'none',
+                      cursor: isToggling ? 'wait' : 'pointer',
+                      background: effectiveCanCreate ? '#34d399' : 'rgba(255,255,255,0.15)',
+                      transition: 'background 0.2s',
+                      flexShrink: 0,
+                      padding: 0,
+                      outline: 'none',
+                    }}
+                  >
+                    <span style={{
+                      position: 'absolute',
+                      top: 2,
+                      left: effectiveCanCreate ? 15 : 2,
+                      width: 13, height: 13,
+                      borderRadius: '50%',
+                      background: 'white',
+                      transition: 'left 0.18s ease',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
+                      opacity: isToggling ? 0.5 : 1,
+                    }} />
+                  </button>
+
+                  {/* Label */}
+                  <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.28)', userSelect: 'none' }}>
+                    Allow Task Creation
+                  </span>
+
+                  {/* Task Creator badge — only when permission is on */}
+                  {effectiveCanCreate && (
+                    <span style={{
+                      fontSize: '0.58rem', fontWeight: 700, padding: '0.1rem 0.38rem',
+                      borderRadius: 6, flexShrink: 0,
+                      background: 'rgba(52,211,153,0.1)',
+                      border: '1px solid rgba(52,211,153,0.22)',
+                      color: '#34d399',
+                      letterSpacing: '0.04em',
+                    }}>
+                      Task Creator
+                    </span>
+                  )}
+                </div>
               )}
             </div>
-            <span style={{
-              fontSize: '0.62rem', fontWeight: 700, padding: '0.1rem 0.4rem', borderRadius: 6, flexShrink: 0,
-              background: m.role === 'admin' ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${m.role === 'admin' ? 'rgba(59,130,246,0.25)' : 'rgba(255,255,255,0.08)'}`,
-              color: m.role === 'admin' ? '#60a5fa' : 'rgba(255,255,255,0.35)',
-              textTransform: 'uppercase', letterSpacing: '0.04em',
-            }}>
-              {m.role === 'admin' ? 'Admin' : 'Member'}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

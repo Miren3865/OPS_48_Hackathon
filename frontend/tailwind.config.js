@@ -4,8 +4,18 @@ export default {
   theme: {
     extend: {
       colors: {
+        // ── Theme-aware semantic tokens ──
+        primary:       'var(--bg-primary)',
+        secondary:     'var(--bg-secondary)',
+        card:          'var(--card-bg)',
+        textPrimary:   'var(--text-primary)',
+        textSecondary: 'var(--text-secondary)',
+        accent:        'var(--accent)',
+        borderDefault: 'var(--border-color)',
+
+        // ── Legacy brand palette ──
         brand: {
-          50: '#eff6ff',
+          50:  '#eff6ff',
           100: '#dbeafe',
           500: '#3b82f6',
           600: '#2563eb',

@@ -64,6 +64,7 @@ export default function KanbanColumn({
   activeDragStatus,
   isShaking,
   isAdmin,
+  canCreateTask,
   hasTodoTasks,
 }) {
   const cfg = COLUMN_CONFIG[status];
@@ -212,6 +213,7 @@ export default function KanbanColumn({
             onDelete={onDeleteTask}
             onUnblock={onUnblockTask}
             currentUserId={currentUserId}
+            isAdmin={isAdmin}
           />
         ))}
         {/* Drop indicator bar at bottom of non-empty column */}
@@ -226,10 +228,10 @@ export default function KanbanColumn({
         )}
       </div>
 
-      {/* Add task — To-Do is admin-only; other columns disabled when no To-Do tasks exist */}
-      {status === 'todo' && !isAdmin ? (
+      {/* Add task — To-Do requires task-creation permission; other columns disabled when no eligible tasks exist */}
+      {status === 'todo' && !canCreateTask ? (
         <div
-          title="Only admins can add tasks to To-Do"
+          title="You don't have permission to add tasks. Ask your team admin."
           style={{
             marginTop: '0.5rem',
             width: '100%',
@@ -251,7 +253,7 @@ export default function KanbanColumn({
             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
           </svg>
           <span style={{ fontSize: '0.73rem', color: 'rgba(255,255,255,0.18)', fontWeight: 500 }}>
-            Admin only
+            No permission
           </span>
         </div>
       ) : status !== 'todo' && !hasTodoTasks ? (
