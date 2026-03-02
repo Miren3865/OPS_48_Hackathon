@@ -1,17 +1,33 @@
 const nodemailer = require('nodemailer');
 
-// ─── Transport ────────────────────────────────────────────────────────────────
-// Uses nodemailer's built-in Gmail service preset which correctly handles
-// OAuth/TLS negotiation without manual host/port/secure flags.
-// Requires EMAIL_USER (Gmail address) and EMAIL_PASS (16-char App Password).
-const createTransporter = () =>
-  nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+// ─── Singleton SMTP Transport ─────────────────────────────────────────────────
+const transporter = nodemailer.createTransport({
+  host: process.env.MAIL_HOST,
+  port: Number(process.env.MAIL_PORT),
+  secure: Number(process.env.MAIL_PORT) === 465,
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
+  },
+});
+
+transporter.verify((error) => {
+  if (error) {
+    console.error('SMTP Connection Error:', error);
+  } else {
+    console.log('SMTP Server Ready');
+  }
+});
+
+// Central sendMail wrapper with logging
+const sendMail = async (options) => {
+  try {
+    await transporter.sendMail(options);
+    console.log('Email sent successfully');
+  } catch (err) {
+    console.error('Email send failed:', err);
+  }
+};
 
 // ─── Verify Email ─────────────────────────────────────────────────────────────
 /**
@@ -21,13 +37,10 @@ const createTransporter = () =>
  * @param {string} token    – raw (unhashed) verification token
  */
 const sendVerificationEmail = async (toEmail, toName, token) => {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-  const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
-
-  const transporter = createTransporter();
+  const verifyUrl = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
 
   const mailOptions = {
-    from: `"OpsBoard" <${process.env.EMAIL_USER}>`,
+    from: `"OpsBoard" <${process.env.MAIL_USER}>`,
     to: toEmail,
     subject: 'Verify your OpsBoard account',
     text: `Hi ${toName},\n\nPlease verify your email by visiting:\n${verifyUrl}\n\nThis link expires in 24 hours.\n\nIf you did not register, you can safely ignore this email.`,
@@ -90,7 +103,7 @@ const sendVerificationEmail = async (toEmail, toName, token) => {
 </html>`,
   };
 
-  await transporter.sendMail(mailOptions);
+  await sendMail(mailOptions);
 };
 
 // ─── Mention Notification Email ────────────────────────────────────────────────────
@@ -104,12 +117,10 @@ const sendVerificationEmail = async (toEmail, toName, token) => {
  * @param {string} messageText – the chat message content
  */
 const sendMentionEmail = async (toEmail, toName, senderName, teamName, teamId, messageText) => {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-  const teamUrl = `${frontendUrl}/team/${teamId}`;
-  const transporter = createTransporter();
+  const teamUrl = `${process.env.CLIENT_URL}/team/${teamId}`;
 
   const mailOptions = {
-    from: `"OpsBoard" <${process.env.EMAIL_USER}>`,
+    from: `"OpsBoard" <${process.env.MAIL_USER}>`,
     to: toEmail,
     subject: 'You were mentioned in OpsBoard Team Chat',
     text: `Hi ${toName},\n\n${senderName} mentioned you in the "${teamName}" team chat:\n\n"${messageText}"\n\nView the conversation:\n${teamUrl}\n\nOpsBoard`,
@@ -168,7 +179,7 @@ const sendMentionEmail = async (toEmail, toName, senderName, teamName, teamId, m
 </html>`,
   };
 
-  await transporter.sendMail(mailOptions);
+  await sendMail(mailOptions);
 };
 
 // ─── Deadline Warning Email ─────────────────────────────────────────────────────
@@ -182,14 +193,13 @@ const sendMentionEmail = async (toEmail, toName, senderName, teamName, teamId, m
  * @param {string} teamUrl    – frontend deep-link to the team board
  */
 const sendDeadlineWarningEmail = async (toEmail, toName, taskTitle, deadline, teamName, teamUrl) => {
-  const transporter = createTransporter();
   const deadlineStr = new Date(deadline).toLocaleString('en-US', {
     weekday: 'short', month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
 
-  await transporter.sendMail({
-    from: `"OpsBoard" <${process.env.EMAIL_USER}>`,
+  await sendMail({
+    from: `"OpsBoard" <${process.env.MAIL_USER}>`,
     to: toEmail,
     subject: `⏰ Task nearing deadline — "${taskTitle}"`,
     text: `Hi ${toName},\n\nThe task "${taskTitle}" in team "${teamName}" is due soon.\nDeadline: ${deadlineStr}\n\nView board: ${teamUrl}\n\nOpsBoard`,
@@ -225,14 +235,13 @@ const sendDeadlineWarningEmail = async (toEmail, toName, taskTitle, deadline, te
  * Strong alert email for tasks that have already passed their deadline.
  */
 const sendOverdueTaskEmail = async (toEmail, toName, taskTitle, deadline, teamName, teamUrl) => {
-  const transporter = createTransporter();
   const deadlineStr = new Date(deadline).toLocaleString('en-US', {
     weekday: 'short', month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
 
-  await transporter.sendMail({
-    from: `"OpsBoard" <${process.env.EMAIL_USER}>`,
+  await sendMail({
+    from: `"OpsBoard" <${process.env.MAIL_USER}>`,
     to: toEmail,
     subject: `🚨 OVERDUE: Task "${taskTitle}" requires immediate action`,
     text: `Hi ${toName},\n\nURGENT: The task "${taskTitle}" in team "${teamName}" is OVERDUE.\nDeadline was: ${deadlineStr}\n\nPlease action this immediately.\nView board: ${teamUrl}\n\nOpsBoard`,
@@ -273,16 +282,14 @@ const sendOverdueTaskEmail = async (toEmail, toName, taskTitle, deadline, teamNa
  * @param {string} teamId    – MongoDB team id (for deep-link)
  */
 const sendTaskAssignmentEmail = async (toEmail, toName, taskTitle, deadline, teamId) => {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-  const teamUrl = `${frontendUrl}/team/${teamId}`;
-  const transporter = createTransporter();
+  const teamUrl = `${process.env.CLIENT_URL}/team/${teamId}`;
 
   const deadlineStr = deadline
     ? new Date(deadline).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
     : 'No deadline set';
 
-  await transporter.sendMail({
-    from: `"OpsBoard" <${process.env.EMAIL_USER}>`,
+  await sendMail({
+    from: `"OpsBoard" <${process.env.MAIL_USER}>`,
     to: toEmail,
     subject: 'You have been assigned a new task in OpsBoard',
     text: `Hi ${toName},\n\nYou have been assigned the task:\n"${taskTitle}"\n\nDeadline: ${deadlineStr}\n\nVisit: ${teamUrl}\n\nOpsBoard`,
@@ -342,12 +349,10 @@ const sendTaskAssignmentEmail = async (toEmail, toName, taskTitle, deadline, tea
  * @param {string} teamId     – MongoDB team id (for deep-link)
  */
 const sendTaskPermissionEmail = async (toEmail, toName, adminName, teamName, teamId) => {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-  const teamUrl = `${frontendUrl}/team/${teamId}`;
-  const transporter = createTransporter();
+  const teamUrl = `${process.env.CLIENT_URL}/team/${teamId}`;
 
-  await transporter.sendMail({
-    from: `"OpsBoard" <${process.env.EMAIL_USER}>`,
+  await sendMail({
+    from: `"OpsBoard" <${process.env.MAIL_USER}>`,
     to: toEmail,
     subject: `You can now create tasks in "${teamName}" — OpsBoard`,
     text: `Hi ${toName},\n\n${adminName} has granted you permission to create tasks in the "${teamName}" team on OpsBoard.\n\nHead to your board to get started:\n${teamUrl}\n\nOpsBoard`,
@@ -439,12 +444,10 @@ const sendTaskPermissionEmail = async (toEmail, toName, adminName, teamName, tea
  * @param {string} teamId     – MongoDB team id (for deep-link)
  */
 const sendTaskPermissionRevokedEmail = async (toEmail, toName, adminName, teamName, teamId) => {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-  const teamUrl = `${frontendUrl}/team/${teamId}`;
-  const transporter = createTransporter();
+  const teamUrl = `${process.env.CLIENT_URL}/team/${teamId}`;
 
-  await transporter.sendMail({
-    from: `"OpsBoard" <${process.env.EMAIL_USER}>`,
+  await sendMail({
+    from: `"OpsBoard" <${process.env.MAIL_USER}>`,
     to: toEmail,
     subject: `Your task creation permission in "${teamName}" has been removed — OpsBoard`,
     text: `Hi ${toName},\n\n${adminName} has removed your task creation permission in the "${teamName}" team on OpsBoard.\n\nYou can still view and work on existing tasks.\n\nView board: ${teamUrl}\n\nOpsBoard`,
@@ -545,10 +548,8 @@ const sendAdminTaskAssignedEmail = async (
   teamName,
   teamUrl
 ) => {
-  const transporter = createTransporter();
-
-  await transporter.sendMail({
-    from: `"OpsBoard" <${process.env.EMAIL_USER}>`,
+  await sendMail({
+    from: `"OpsBoard" <${process.env.MAIL_USER}>`,
     to: toEmail,
     subject: 'New Task Assigned in OpsBoard',
     text: `Hi ${toName},\n\nA task has been assigned in your team.\n\nTask: ${taskTitle}\nAssigned By: ${actorName}\nAssigned To: ${assigneeName}\nTeam: ${teamName}\n\nView board: ${teamUrl}\n\nOpsBoard`,
@@ -642,10 +643,8 @@ const sendTeamTaskCompletedEmail = async (
   teamName,
   teamUrl
 ) => {
-  const transporter = createTransporter();
-
-  await transporter.sendMail({
-    from: `"OpsBoard" <${process.env.EMAIL_USER}>`,
+  await sendMail({
+    from: `"OpsBoard" <${process.env.MAIL_USER}>`,
     to: toEmail,
     subject: 'Task Completed in OpsBoard',
     text: `Hi ${toName},\n\nA task has been completed in your team.\n\nTask: ${taskTitle}\nCompleted By: ${actorName}\nTeam: ${teamName}\n\nView board: ${teamUrl}\n\nOpsBoard`,
@@ -737,10 +736,8 @@ const sendTeamTaskBlockedEmail = async (
   teamName,
   teamUrl
 ) => {
-  const transporter = createTransporter();
-
-  await transporter.sendMail({
-    from: `"OpsBoard" <${process.env.EMAIL_USER}>`,
+  await sendMail({
+    from: `"OpsBoard" <${process.env.MAIL_USER}>`,
     to: toEmail,
     subject: `Task Blocked in OpsBoard — "${taskTitle}"`,
     text: `Hi ${toName},\n\nA task has been blocked in your team.\n\nTask: ${taskTitle}\nBlocked By: ${actorName}\nReason: ${blockerReason}\nTeam: ${teamName}\n\nView board: ${teamUrl}\n\nOpsBoard`,

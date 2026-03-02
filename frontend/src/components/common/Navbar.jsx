@@ -103,7 +103,7 @@ export default function Navbar({ teamName }) {
           }}
         >
           <span className="live-dot" />
-          <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#34d399', letterSpacing: '0.04em' }}>
+          <span className="nav-live-label" style={{ fontSize: '0.7rem', fontWeight: 600, color: '#34d399', letterSpacing: '0.04em' }}>
             LIVE
           </span>
         </div>
@@ -132,11 +132,11 @@ export default function Navbar({ teamName }) {
             {initials}
           </div>
           <span
+            className="nav-username"
             style={{
               fontSize: '0.82rem',
               fontWeight: 500,
               color: 'var(--text-secondary)',
-              display: window.innerWidth > 640 ? 'block' : 'none',
               maxWidth: 120,
               overflow: 'hidden',
               textOverflow: 'ellipsis',

@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 
 let socket = null;
 
@@ -15,7 +15,8 @@ export const initSocket = (token) => {
     auth: { token },
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,
-    transports: ['websocket', 'polling'],
+    transports: ['websocket'],
+    withCredentials: true,
   });
 
   socket.on('connect', () => {

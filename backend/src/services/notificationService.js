@@ -35,8 +35,7 @@ const {
  */
 const sendTaskAssignedNotification = async (task, teamId, actorName) => {
   try {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const teamUrl = `${frontendUrl}/team/${teamId}`;
+    const teamUrl = `${process.env.CLIENT_URL}/team/${teamId}`;
 
     const team = await Team.findById(teamId).populate('members.user', 'name email');
     if (!team) {
@@ -91,8 +90,7 @@ const sendTaskAssignedNotification = async (task, teamId, actorName) => {
  */
 const sendTaskCompletedNotification = async (task, teamId, actorName) => {
   try {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const teamUrl = `${frontendUrl}/team/${teamId}`;
+    const teamUrl = `${process.env.CLIENT_URL}/team/${teamId}`;
 
     const team = await Team.findById(teamId).populate('members.user', 'name email');
     if (!team) {
@@ -146,8 +144,7 @@ const sendTaskCompletedNotification = async (task, teamId, actorName) => {
  */
 const sendTaskBlockedNotification = async (task, teamId, actorName, blockerReason) => {
   try {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const teamUrl = `${frontendUrl}/team/${teamId}`;
+    const teamUrl = `${process.env.CLIENT_URL}/team/${teamId}`;
 
     const team = await Team.findById(teamId).populate('members.user', 'name email');
     if (!team) {

@@ -24,7 +24,7 @@ const httpServer = http.createServer(app);
 // Socket.IO setup with CORS
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: process.env.CLIENT_URL,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -40,14 +40,20 @@ initSocket(io);
 startEscalationScheduler(io);
 
 // Middleware
+app.set('trust proxy', 1);
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: process.env.CLIENT_URL,
     credentials: true,
   })
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Root route — required for Render uptime checks
+app.get('/', (req, res) => {
+  res.send('OpsBoard API Running');
+});
 
 // Health check
 app.get('/health', (req, res) => {

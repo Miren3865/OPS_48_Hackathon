@@ -248,12 +248,21 @@ export default function DashboardPage() {
                   pointerEvents: 'none',
                 }} />
 
-                {/* Delete button */}
-                <button
+                {/* Delete button — must NOT be a <button> since it sits inside a <button> card */}
+                <div
+                  role="button"
+                  tabIndex={0}
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.stopPropagation();
                     setDeleteTarget({ _id: team._id || team, name: team.name || 'Team' });
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDeleteTarget({ _id: team._id || team, name: team.name || 'Team' });
+                    }
                   }}
                   title="Delete team"
                   style={{
@@ -277,7 +286,7 @@ export default function DashboardPage() {
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
                   </svg>
-                </button>
+                </div>
 
                 {/* Avatar */}
                 <div

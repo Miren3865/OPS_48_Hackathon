@@ -67,8 +67,7 @@ const runEscalationCheck = async (io) => {
             const isOverdue = deadline < now;
             const teamId = String(task.team._id);
             const teamName = task.team.name || 'your team';
-            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-            const teamUrl = `${frontendUrl}/team/${teamId}`;
+            const teamUrl = `${process.env.CLIENT_URL}/team/${teamId}`;
 
             // ── 1. Email assigned member ─────────────────────────────────────
             if (task.assignedTo?.email) {

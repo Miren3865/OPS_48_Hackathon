@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTeam } from '../context/TeamContext';
 import { useAuth } from '../context/AuthContext';
@@ -19,6 +19,10 @@ export default function TeamPage() {
   const { currentTeam, loadTeam, loadingTeam } = useTeam();
   const { refreshUser } = useAuth();
   const navigate = useNavigate();
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const closeSidebar = () => setSidebarOpen(false);
+  const toggleSidebar = () => setSidebarOpen((v) => !v);
 
   useEffect(() => {
     if (teamId) loadTeam(teamId);
@@ -76,11 +80,18 @@ export default function TeamPage() {
     >
       <Navbar teamName={currentTeam.name} />
 
-      <div style={{ display: 'flex', height: 'calc(100vh - 56px)' }}>
+      <div className="team-layout" style={{ display: 'flex', height: 'calc(100vh - 56px)' }}>
+
+        {/* Mobile overlay — closes sidebar when tapped outside */}
+        <div
+          className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`}
+          onClick={closeSidebar}
+          aria-hidden="true"
+        />
 
         {/* ── SIDEBAR ── */}
         <aside
-          className="sidebar"
+          className={`sidebar${sidebarOpen ? ' sidebar-open' : ''}`}
           style={{
             width: 288,
             flexShrink: 0,
@@ -168,6 +179,18 @@ export default function TeamPage() {
                 <polyline points="15 18 9 12 15 6"/>
               </svg>
               All teams
+            </button>
+
+            {/* Mobile: toggle sidebar */}
+            <button
+              className="mobile-sidebar-btn"
+              onClick={toggleSidebar}
+              aria-label="Toggle sidebar"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/>
+              </svg>
+              Stats
             </button>
 
             {/* Keyboard shortcuts hint */}

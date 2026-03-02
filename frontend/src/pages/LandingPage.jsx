@@ -162,11 +162,11 @@ export default function LandingPage() {
 
       {/* ── NAV ── */}
       <nav
+        className="landing-nav"
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '1.25rem 2.5rem',
           position: 'relative',
           zIndex: 10,
           borderBottom: '1px solid var(--border-color)',
@@ -207,7 +207,7 @@ export default function LandingPage() {
         </div>
 
         {/* CTA */}
-        <div style={{ display: 'flex', gap: '0.625rem', alignItems: 'center' }}>
+        <div className="landing-nav-cta">
           <button
             onClick={() => navigate('/login')}
             className="btn-secondary"
@@ -319,7 +319,7 @@ export default function LandingPage() {
 
         {/* Social proof strip */}
         <div
-          className="animate-fade-up stagger-4"
+          className="animate-fade-up stagger-4 landing-social-proof"
           style={{
             display: 'flex',
             alignItems: 'center',

@@ -277,6 +277,7 @@ export default function KanbanBoard() {
         onDragCancel={handleDragCancel}
       >
         <div
+          className="kanban-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4, minmax(256px, 1fr))',

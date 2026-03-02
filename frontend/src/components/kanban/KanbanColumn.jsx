@@ -82,7 +82,7 @@ export default function KanbanColumn({
   return (
     <div
       style={{ display: 'flex', flexDirection: 'column', minWidth: 268, width: '100%', height: '100%' }}
-      className={isShaking ? 'wf-shake' : ''}
+      className={`kanban-col${isShaking ? ' wf-shake' : ''}`}
     >
       {/* Column header */}
       <div

@@ -753,3 +753,121 @@ select.input-field option {
   border-color: rgba(239,68,68,0.3) !important;
 }
 
+/* ══════════════════════════════════════════════
+   RESPONSIVE — MOBILE & TABLET BREAKPOINTS
+══════════════════════════════════════════════ */
+
+/* Nav username — hidden on small screens via CSS class (never use window.innerWidth) */
+.nav-username { display: block; }
+
+/* Mobile sidebar toggle button — hidden on desktop */
+.mobile-sidebar-btn { display: none; }
+
+/* Sidebar backdrop overlay */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 199;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  cursor: pointer;
+}
+.sidebar-overlay.open { display: block; }
+
+/* Landing page nav — responsive padding class */
+.landing-nav { padding: 1.25rem 2.5rem; }
+
+/* Landing page nav CTA row */
+.landing-nav-cta { display: flex; gap: 0.625rem; align-items: center; }
+
+@media (max-width: 768px) {
+  /* ── Sidebar: off-canvas drawer on mobile ── */
+  .sidebar {
+    position: fixed !important;
+    top: 56px;
+    left: 0;
+    bottom: 0;
+    width: 288px !important;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    overflow-y: auto;
+  }
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+    box-shadow: 8px 0 40px rgba(0, 0, 0, 0.55);
+  }
+
+  /* ── Team layout: main takes full width on mobile ── */
+  .team-layout {
+    height: auto !important;
+    min-height: calc(100vh - 56px);
+  }
+
+  /* ── Nav: hide username text on mobile ── */
+  .nav-username { display: none !important; }
+
+  /* ── Show sidebar toggle on mobile ── */
+  .mobile-sidebar-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+  }
+  .mobile-sidebar-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+  }
+
+  /* ── Landing nav: tighter on mobile ── */
+  .landing-nav {
+    padding: 0.875rem 1rem !important;
+  }
+
+  /* ── Landing nav CTA: wrap on very small screens ── */
+  .landing-nav-cta {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  /* ── Landing hero social proof: wrap on narrow screens ── */
+  .landing-social-proof {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 0.75rem !important;
+  }
+
+  /* ── Hide LIVE badge label on tiny screens ── */
+  .nav-live-label { display: none; }
+}
+
+@media (max-width: 480px) {
+  /* Stack landing nav on very small screens */
+  .landing-nav {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+    align-items: flex-start !important;
+    padding: 0.875rem 1rem !important;
+  }
+  .landing-nav-cta {
+    width: 100%;
+    justify-content: flex-start !important;
+  }
+
+  /* Kanban board: smaller column min-width so more fits */
+  .kanban-col {
+    min-width: 260px !important;
+  }
+}
