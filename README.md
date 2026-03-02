@@ -29,7 +29,7 @@ OpsBoard is a full-stack, real-time operational dashboard that gives small teams
 - Live **Deadline Banner** — auto-appears when any open task is overdue or due within 12 hours
 - Task-level **Comments** thread on each card with live broadcast to all open modals
 - **Filter Bar** — filter by assignee, priority, status, or free-text search in real time
-- Keyboard shortcuts panel (`?` to open)
+- Keyboard shortcuts panel (`shift+?` to open)
 
 ### Execution Risk Radar
 A 0–100 team health score calculated server-side from five weighted signals:
