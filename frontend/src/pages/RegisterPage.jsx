@@ -169,7 +169,7 @@ export default function RegisterPage() {
             Join OpsBoard
           </h1>
           <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.36)', fontWeight: 400 }}>
-            Free forever · No credit card needed
+            Your team's command center · Up and running in seconds
           </p>
         </div>
 
