@@ -131,9 +131,9 @@ export default function FilterBar({ filters, setFilters, members, searchRef }) {
             flexShrink: 0,
           }}
         >
-          <option value="all">All Members</option>
+          <option value="all" style={{ background: '#1e293b', color: '#e2e8f0' }}>All Members</option>
           {members.map((m) => (
-            <option key={m.user._id || m.user} value={m.user._id || m.user}>
+            <option key={m.user._id || m.user} value={m.user._id || m.user} style={{ background: '#1e293b', color: '#e2e8f0' }}>
               {m.user.name || 'Member'}
             </option>
           ))}
