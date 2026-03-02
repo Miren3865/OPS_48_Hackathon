@@ -172,7 +172,7 @@ export default function TeamPage() {
 
             {/* Keyboard shortcuts hint */}
             <div
-              title="Press ? to see keyboard shortcuts"
+              title="Press  shift+?  to see keyboard shortcuts"
               style={{
                 fontSize: '0.65rem',
                 color: 'rgba(255,255,255,0.25)',

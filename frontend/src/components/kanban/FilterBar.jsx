@@ -63,6 +63,13 @@ export default function FilterBar({ filters, setFilters, members, searchRef }) {
           placeholder="Search tasks…  (Press /)"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setSearch('');
+              e.target.blur();
+              e.stopPropagation();
+            }
+          }}
           style={{
             width: '100%',
             background: 'rgba(255,255,255,0.05)',
