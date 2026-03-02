@@ -8,7 +8,7 @@ import { teamsAPI } from '../../services/api';
 export function CreateTeamModal({ isOpen, onClose, onCreated }) {
   const [form, setForm] = useState({ name: '', description: '' });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(''); // Local form error (e.g. validation)
 
   const handleSubmit = async (e) => {
     e.preventDefault();

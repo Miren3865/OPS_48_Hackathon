@@ -54,7 +54,7 @@ const requireAdmin = (teamId) => async (req, res, next) => {
       return res.status(403).json({ message: 'Admin access required' });
     }
 
-    req.team = team;
+    req.team = team; // Attach team to request for downstream use
     next();
   } catch (error) {
     return res.status(500).json({ message: 'Server error' });

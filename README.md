@@ -80,7 +80,7 @@ Reports are copyable to clipboard and exportable as `.txt`.
 
 ### UX
 - Toast notifications for all real-time events
-- Keyboard shortcut panel (`?` to open)
+- Keyboard shortcut panel (`shift+?` to open)
 - Smooth animations throughout
 - Rate limiting on all auth endpoints (register, login, verify, resend)
 
