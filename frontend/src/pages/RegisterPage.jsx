@@ -23,8 +23,8 @@ export default function RegisterPage() {
     if (form.password.length < 6) return setError('Password must be at least 6 characters');
     setLoading(true);
     try {
-      const data = await register(form.name, form.email, form.password);
-      setSuccessEmail(data.email || form.email);
+      await register(form.name, form.email, form.password);
+      navigate('/login');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
     } finally {

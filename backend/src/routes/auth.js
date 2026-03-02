@@ -74,37 +74,26 @@ router.post(
 
       let user;
       if (existingUser && !existingUser.isVerified) {
-        // Update the existing unverified account with a fresh token
-        existingUser.verificationToken = hashed;
-        existingUser.verificationTokenExpiry = expiry;
+        existingUser.isVerified = true;
+        existingUser.verificationToken = undefined;
+        existingUser.verificationTokenExpiry = undefined;
         user = await existingUser.save();
       } else {
         user = await User.create({
           name,
           email,
           password,
-          isVerified: false,
-          verificationToken: hashed,
-          verificationTokenExpiry: expiry,
+          isVerified: true,
         });
       }
 
-      console.log('─── REGISTER ───────────────────────────────────');
+      console.log('─── REGISTER (auto-verified) ───────────────────');
       console.log('EMAIL  :', email);
-      console.log('RAW    :', raw);
-      console.log('HASHED :', hashed);
-      console.log('EXPIRY :', expiry);
       console.log('DB _id :', user._id.toString());
       console.log('────────────────────────────────────────────────');
 
-      try {
-        await sendVerificationEmail(email, name, raw);
-      } catch (emailErr) {
-        console.error('Verification email failed to send:', emailErr.message);
-      }
-
       res.status(201).json({
-        message: 'Account created! Please check your inbox and verify your email before logging in.',
+        message: 'Account created! You can now log in.',
         email,
       });
     } catch (error) {
@@ -137,13 +126,7 @@ router.post(
         return res.status(401).json({ message: 'Invalid email or password' });
       }
 
-      if (!user.isVerified) {
-        return res.status(403).json({
-          message: 'Please verify your email before logging in.',
-          unverified: true,
-          email: user.email,
-        });
-      }
+      // Email verification disabled — users are auto-verified on registration
 
       res.json({
         token: generateToken(user._id),
